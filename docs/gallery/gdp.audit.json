@@ -1,0 +1,205 @@
+{
+  "max_relative_area_error": 6.628031457012185e-14,
+  "minimum_country_distance": 0.4190002614376026,
+  "overlap_pairs": [],
+  "all_geometries_valid": true,
+  "coverage": {
+    "omitted_country_codes": [
+      "ATC",
+      "PCN",
+      "VAT"
+    ],
+    "zero_country_codes": [],
+    "sum_of_values": 88288490.0
+  },
+  "packing": {
+    "method": "geographic_growth_rigid_body_physics",
+    "engine": "Pymunk/Chipmunk",
+    "engine_version": "7.3.1",
+    "convex_piece_count": 693,
+    "collision_mode": "hull",
+    "collision_tolerance": 0.12,
+    "maximum_final_collision_outline_error": 14.674025936703934,
+    "growth_steps": 80,
+    "relax_per_step": 20,
+    "settling_iterations": 4579,
+    "equilibrium_converged": true,
+    "max_final_step_movement": 0.00197335628419217,
+    "position_tolerance": 0.002,
+    "physics_dt": 0.04,
+    "initial_geographic_scale": 0.8643870531580521,
+    "growth_trace": [
+      {
+        "progress": 0.007250000000000001,
+        "max_step_movement": 0.11231376153187847
+      },
+      {
+        "progress": 0.028000000000000004,
+        "max_step_movement": 0.14342227519441364
+      },
+      {
+        "progress": 0.06075,
+        "max_step_movement": 0.14681472150917668
+      },
+      {
+        "progress": 0.10400000000000002,
+        "max_step_movement": 0.14157624196773985
+      },
+      {
+        "progress": 0.15625,
+        "max_step_movement": 0.13297787502437852
+      },
+      {
+        "progress": 0.216,
+        "max_step_movement": 0.12373460879283389
+      },
+      {
+        "progress": 0.28174999999999994,
+        "max_step_movement": 0.09905624578063302
+      },
+      {
+        "progress": 0.3520000000000001,
+        "max_step_movement": 0.09334700611244122
+      },
+      {
+        "progress": 0.4252500000000001,
+        "max_step_movement": 0.08978486088666163
+      },
+      {
+        "progress": 0.5,
+        "max_step_movement": 0.12886032046002005
+      },
+      {
+        "progress": 0.5747500000000001,
+        "max_step_movement": 0.16288544639251853
+      },
+      {
+        "progress": 0.648,
+        "max_step_movement": 0.07871954219756536
+      },
+      {
+        "progress": 0.71825,
+        "max_step_movement": 0.12185572439221057
+      },
+      {
+        "progress": 0.7839999999999999,
+        "max_step_movement": 0.10541413719936177
+      },
+      {
+        "progress": 0.84375,
+        "max_step_movement": 0.0975110882098467
+      },
+      {
+        "progress": 0.8960000000000001,
+        "max_step_movement": 0.1487156276114882
+      },
+      {
+        "progress": 0.9392499999999999,
+        "max_step_movement": 0.48998372599170437
+      },
+      {
+        "progress": 0.972,
+        "max_step_movement": 0.5097253428305373
+      },
+      {
+        "progress": 0.99275,
+        "max_step_movement": 0.39844775711898817
+      },
+      {
+        "progress": 1.0,
+        "max_step_movement": 0.2608939908268491
+      }
+    ],
+    "elapsed_seconds": 30.293390287999955
+  },
+  "omitted_labels": [],
+  "config": {
+    "title": "The world economy by size",
+    "subtitle": "Countries resized by nominal GDP | Historical demonstration dataset",
+    "source_note": "Demo only: Natural Earth GDP_MD attributes, mixed years (mostly 2019); not current GDP. USD millions in input.",
+    "prefix": "$",
+    "divisor": 1000000,
+    "suffix": "T",
+    "decimals": 1,
+    "total_area": 10000,
+    "country_gap": 0.4,
+    "cluster_gap": 2.5,
+    "geographic_spread": 0.72,
+    "geographic_pull": 0.002,
+    "cluster_pull": 0.006,
+    "layout_mode": "growth",
+    "growth_steps": 80,
+    "relax_per_step": 20,
+    "settle_steps": 6000,
+    "position_tolerance": 0.002,
+    "physics_dt": 0.04,
+    "contact_iterations": 50,
+    "collision_tolerance": 0.12,
+    "collision_mode": "hull",
+    "damping": 0.7,
+    "iterations": 250,
+    "territory_distance": 12,
+    "parent_pull": 0.04,
+    "satellite_distance": 1.4,
+    "min_part_fraction": 0.001,
+    "max_parts": 24,
+    "simplify": 0.0015,
+    "labels": 14,
+    "label_countries": [
+      "AUS",
+      "BRA",
+      "IND",
+      "ZAF",
+      "NGA"
+    ],
+    "label_offsets": {},
+    "label_aliases": {
+      "GBR": "UK"
+    },
+    "background": "#edf8fa",
+    "ink": "#10243a",
+    "colors": {
+      "North America": "#1679b7",
+      "South America": "#38a36d",
+      "Europe": "#8b4cb0",
+      "Africa": "#edc54f",
+      "Asia": "#e55261",
+      "Oceania": "#f29b45"
+    },
+    "cluster_anchors": {
+      "North America": [
+        -105,
+        42
+      ],
+      "South America": [
+        -62,
+        -18
+      ],
+      "Europe": [
+        12,
+        52
+      ],
+      "Africa": [
+        18,
+        0
+      ],
+      "Asia": [
+        105,
+        32
+      ],
+      "Oceania": [
+        140,
+        -28
+      ]
+    }
+  },
+  "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
+  "input_sha256": "27603478fd1f1a49887b382f3733ace680d2abb24a98bf1aeac43065201dc778",
+  "boundaries_sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "shapely": "2.2.0",
+    "matplotlib": "3.10.8"
+  }
+}

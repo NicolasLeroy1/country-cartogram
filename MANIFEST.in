@@ -1,0 +1,6 @@
+include LICENSE README.md config.example.json requirements-tested.txt
+recursive-include src/country_cartogram/data *.geojson *.json *.csv
+recursive-include examples *.csv *.json
+recursive-include docs *.md *.png *.gif *.json *.csv
+recursive-include tests *.py
+recursive-include scripts *.py

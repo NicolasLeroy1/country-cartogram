@@ -1,0 +1,5 @@
+{
+  "layout_mode": "legacy",
+  "geographic_pull": 0.015,
+  "cluster_pull": 0.003
+}

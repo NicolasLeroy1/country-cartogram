@@ -1,0 +1,13 @@
+{
+  "title": "The world by population",
+  "subtitle": "The same geography, resized by a different quantity",
+  "source_note": "Demo only: Natural Earth POP_EST attributes, mixed historical years; not current population estimates.",
+  "divisor": 1000000,
+  "suffix": "M",
+  "decimals": 0,
+  "label_countries": [
+    "AUS",
+    "BRA",
+    "ZAF"
+  ]
+}

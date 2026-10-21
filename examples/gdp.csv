@@ -1,0 +1,231 @@
+country_code,value,name,cluster,parent,year
+ABW,3056,Aruba,Europe,NLD,2017
+AFG,19291,Afghanistan,Asia,,2019
+AGO,88815,Angola,Africa,,2019
+AIA,175,Anguilla,Europe,GBR,2009
+ALA,1563,Åland,Europe,FIN,2016
+ALB,15279,Albania,Europe,,2019
+AND,3154,Andorra,Europe,,2019
+ARE,421142,United Arab Emirates,Asia,,2019
+ARG,445445,Argentina,South America,,2019
+ARM,13672,Armenia,Asia,,2019
+ASM,636,American Samoa,North America,USA,2018
+ATG,1661,Antigua and Barbuda,North America,,2019
+AUS,1396567,Australia,Oceania,,2019
+AUT,445075,Austria,Europe,,2019
+AZE,48047,Azerbaijan,Asia,,2019
+BDI,3012,Burundi,Africa,,2019
+BEL,533097,Belgium,Europe,,2019
+BEN,14390,Benin,Africa,,2019
+BFA,15990,Burkina Faso,Africa,,2019
+BGD,302571,Bangladesh,Asia,,2019
+BGR,68558,Bulgaria,Europe,,2019
+BHR,38574,Bahrain,Asia,,2019
+BHS,13578,The Bahamas,North America,,2019
+BIH,20164,Bosnia and Herzegovina,Europe,,2019
+BLM,255,Saint Barthélemy,Europe,FRA,2016
+BLR,63080,Belarus,Europe,,2019
+BLZ,1879,Belize,North America,,2019
+BMU,7484,Bermuda,Europe,GBR,2019
+BOL,40895,Bolivia,South America,,2019
+BRA,1839758,Brazil,South America,,2019
+BRB,5209,Barbados,North America,,2019
+BRN,13469,Brunei,Asia,,2019
+BTN,2530,Bhutan,Asia,,2019
+BWA,18340,Botswana,Africa,,2019
+CAF,2220,Central African Republic,Africa,,2019
+CAN,1736425,Canada,North America,,2019
+CHE,703082,Switzerland,Europe,,2019
+CHL,282318,Chile,South America,,2019
+CHN,14342903,China,Asia,,2019
+CIV,58539,Ivory Coast,Africa,,2019
+CMR,39007,Cameroon,Africa,,2019
+COD,50400,DR Congo,Africa,,2019
+COG,12267,Congo,Africa,,2019
+COK,244,Cook Islands,Oceania,NZL,2010
+COL,323615,Colombia,South America,,2019
+COM,1165,Comoros,Africa,,2019
+CPV,1981,Cape Verde,Africa,,2019
+CRI,61801,Costa Rica,North America,,2019
+CUB,100023,Cuba,North America,,2018
+CUW,3101,Curaçao,Europe,NLD,2019
+CYM,5517,Cayman Islands,Europe,GBR,2018
+CYN,3600,Turkish Republic of Northern Cyprus,Asia,,2013
+CYP,24948,Cyprus,Asia,,2019
+CZE,250680,Czech Republic,Europe,,2019
+DEU,3861123,Germany,Europe,,2019
+DJI,3324,Djibouti,Africa,,2019
+DMA,582,Dominica,North America,,2019
+DNK,350104,Denmark,Europe,,2019
+DOM,88941,Dominican Republic,North America,,2019
+DZA,171091,Algeria,Africa,,2019
+ECU,107435,Ecuador,South America,,2019
+EGY,303092,Egypt,Africa,,2019
+ERI,2065,Eritrea,Africa,,2011
+ESH,907,Western Sahara,Africa,,2007
+ESP,1393490,Spain,Europe,,2019
+EST,31471,Estonia,Europe,,2019
+ETH,95912,Ethiopia,Africa,,2019
+FIN,269296,Finland,Europe,,2019
+FJI,5496,Fiji,Oceania,,2019
+FLK,282,Falkland Islands,Europe,GBR,2012
+FRA,2715518,France,Europe,,2019
+FRO,3116,Faroe Islands,Europe,DNK,2018
+FSM,401,Federated States of Micronesia,Oceania,,2018
+GAB,16874,Gabon,Africa,,2019
+GBR,2829108,United Kingdom,Europe,,2019
+GEO,17477,Georgia,Asia,,2019
+GGY,3465,Guernsey,Europe,GBR,2015
+GHA,66983,Ghana,Africa,,2019
+GIN,12296,Guinea,Africa,,2019
+GMB,1826,The Gambia,Africa,,2019
+GNB,1339,Guinea-Bissau,Africa,,2019
+GNQ,11026,Equatorial Guinea,Africa,,2019
+GRC,209852,Greece,Europe,,2019
+GRD,1210,Grenada,North America,,2019
+GRL,3051,Greenland,Europe,DNK,2018
+GTM,76710,Guatemala,North America,,2019
+GUM,5920,Guam,North America,USA,2018
+GUY,5173,Guyana,South America,,2019
+HKG,365711,Hong Kong,Asia,CHN,2019
+HND,25095,Honduras,North America,,2019
+HRV,60752,Croatia,Europe,,2019
+HTI,14332,Haiti,North America,,2019
+HUN,163469,Hungary,Europe,,2019
+IDN,1119190,Indonesia,Asia,,2019
+IMN,7491,Isle of Man,Europe,GBR,2018
+IND,2868929,India,Asia,,2019
+IOA,35,Australian Indian Ocean Territories,Oceania,AUS,2016
+IRL,388698,Ireland,Europe,,2019
+IRN,453996,Iran,Asia,,2018
+IRQ,234094,Iraq,Asia,,2019
+ISL,24188,Iceland,Europe,,2019
+ISR,394652,Israel,Asia,,2019
+ITA,2003576,Italy,Europe,,2019
+JAM,16458,Jamaica,North America,,2019
+JEY,5080,Jersey,Europe,GBR,2015
+JOR,44502,Jordan,Asia,,2019
+JPN,5081769,Japan,Asia,,2019
+KAS,15,Siachen Glacier,Asia,,2013
+KAZ,181665,Kazakhstan,Asia,,2019
+KEN,95503,Kenya,Africa,,2019
+KGZ,8454,Kyrgyzstan,Asia,,2019
+KHM,27089,Cambodia,Asia,,2019
+KIR,194,Kiribati,Oceania,,2019
+KNA,1053,Saint Kitts and Nevis,North America,,2019
+KOR,1646739,South Korea,Asia,,2019
+KOS,7926,Kosovo,Europe,,2019
+KWT,134628,Kuwait,Asia,,2019
+LAO,18173,Laos,Asia,,2019
+LBN,51991,Lebanon,Asia,,2019
+LBR,3070,Liberia,Africa,,2019
+LBY,52091,Libya,Africa,,2019
+LCA,2122,Saint Lucia,North America,,2019
+LIE,6876,Liechtenstein,Europe,,2018
+LKA,84008,Sri Lanka,Asia,,2019
+LSO,2376,Lesotho,Africa,,2019
+LTU,54627,Lithuania,Europe,,2019
+LUX,71104,Luxembourg,Europe,,2019
+LVA,34102,Latvia,Europe,,2019
+MAC,53859,Macau,Asia,CHN,2019
+MAF,562,Saint Martin,Europe,FRA,2016
+MAR,119700,Morocco,Africa,,2019
+MCO,7188,Monaco,Europe,,2018
+MDA,11968,Moldova,Europe,,2019
+MDG,14114,Madagascar,Africa,,2019
+MEX,1268870,Mexico,North America,,2019
+MHL,221,Marshall Islands,Oceania,,2018
+MKD,12547,North Macedonia,Europe,,2019
+MLI,17279,Mali,Africa,,2019
+MLT,14989,Malta,Europe,,2019
+MMR,76085,Myanmar,Asia,,2019
+MNE,5542,Montenegro,Europe,,2019
+MNG,13996,Mongolia,Asia,,2019
+MNP,1323,Northern Mariana Islands,North America,USA,2018
+MOZ,15291,Mozambique,Africa,,2019
+MRT,7600,Mauritania,Africa,,2019
+MSR,44,Montserrat,Europe,GBR,2006
+MWI,7666,Malawi,Africa,,2019
+MYS,364681,Malaysia,Asia,,2019
+NAM,12366,Namibia,Africa,,2019
+NCL,10770,New Caledonia,Europe,FRA,2016
+NER,12911,Niger,Africa,,2019
+NFK,32,Norfolk Island,Oceania,AUS,2016
+NGA,448120,Nigeria,Africa,,2019
+NIC,12520,Nicaragua,North America,,2019
+NIU,10,Niue,Oceania,NZL,2003
+NLD,907050,Netherlands,Europe,,2019
+NOR,403336,Norway,Europe,,2019
+NPL,30641,Nepal,Asia,,2019
+NRU,118,Nauru,Oceania,,2019
+NZL,206928,New Zealand,Oceania,,2019
+OMN,76331,Oman,Asia,,2019
+PAK,278221,Pakistan,Asia,,2019
+PAN,66800,Panama,North America,,2019
+PER,226848,Peru,South America,,2019
+PHL,376795,Philippines,Asia,,2019
+PLW,268,Palau,Oceania,,2019
+PNG,24829,Papua New Guinea,Oceania,,2019
+POL,595858,Poland,Europe,,2019
+PRI,104988,Puerto Rico,North America,USA,2019
+PRK,40000,North Korea,Asia,,2016
+PRT,238785,Portugal,Europe,,2019
+PRY,38145,Paraguay,South America,,2019
+PSE,16276,Palestine,Asia,ISR,2018
+PYF,5490,French Polynesia,Europe,FRA,2016
+QAT,175837,Qatar,Asia,,2019
+ROU,250077,Romania,Europe,,2019
+RUS,1699876,Russia,Europe,,2019
+RWA,10354,Rwanda,Africa,,2019
+SAU,792966,Saudi Arabia,Asia,,2019
+SDN,30513,Sudan,Africa,,2019
+SEN,23578,Senegal,Africa,,2019
+SGP,372062,Singapore,Asia,,2019
+SLB,1589,Solomon Islands,Oceania,,2019
+SLE,4121,Sierra Leone,Africa,,2019
+SLV,27022,El Salvador,North America,,2019
+SMR,1655,San Marino,Europe,,2018
+SOL,17836,Somaliland,Africa,,2013
+SOM,4719,Somalia,Africa,,2016
+SPM,215,Saint Pierre and Miquelon,Europe,FRA,2016
+SRB,51475,Serbia,Europe,,2019
+SSD,11998,South Sudan,Africa,,2015
+STP,418,São Tomé and Príncipe,Africa,,2019
+SUR,3697,Suriname,South America,,2019
+SVK,105079,Slovakia,Europe,,2019
+SVN,54174,Slovenia,Europe,,2019
+SWE,530883,Sweden,Europe,,2019
+SWZ,4471,Eswatini,Africa,,2019
+SXM,1185,Sint Maarten,Europe,NLD,2018
+SYR,98830,Syria,Asia,,2015
+TCA,1197,Turks and Caicos Islands,Europe,GBR,2019
+TCD,11314,Chad,Africa,,2019
+TGO,5490,Togo,Africa,,2019
+THA,543548,Thailand,Asia,,2019
+TJK,8116,Tajikistan,Asia,,2019
+TKM,40761,Turkmenistan,Asia,,2018
+TLS,2017,East Timor,Asia,,2019
+TON,512,Tonga,Oceania,,2019
+TTO,24269,Trinidad and Tobago,North America,,2019
+TUN,38796,Tunisia,Africa,,2019
+TUR,761425,Turkey,Asia,,2019
+TUV,47,Tuvalu,Oceania,,2019
+TWN,1127000,Taiwan,Asia,,2016
+TZA,63177,Tanzania,Africa,,2019
+UGA,35165,Uganda,Africa,,2019
+UKR,153781,Ukraine,Europe,,2019
+URY,56045,Uruguay,South America,,2019
+USA,21433226,United States,North America,,2019
+UZB,57921,Uzbekistan,Asia,,2019
+VCT,824,Saint Vincent and the Grenadines,North America,,2019
+VEN,482359,Venezuela,South America,,2014
+VGB,500,British Virgin Islands,Europe,GBR,2017
+VIR,3855,United States Virgin Islands,North America,USA,2017
+VNM,261921,Vietnam,Asia,,2019
+VUT,934,Vanuatu,Oceania,,2019
+WLF,60,Wallis and Futuna,Europe,FRA,2016
+WSM,852,Samoa,Oceania,,2019
+YEM,22581,Yemen,Asia,,2019
+ZAF,351431,South Africa,Africa,,2019
+ZMB,23309,Zambia,Africa,,2019
+ZWE,21440,Zimbabwe,Africa,,2019

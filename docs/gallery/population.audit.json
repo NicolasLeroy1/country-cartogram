@@ -1,0 +1,201 @@
+{
+  "max_relative_area_error": 2.3447910280083306e-13,
+  "minimum_country_distance": 0.41900001789375424,
+  "overlap_pairs": [],
+  "all_geometries_valid": true,
+  "coverage": {
+    "omitted_country_codes": [
+      "ATC"
+    ],
+    "zero_country_codes": [],
+    "sum_of_values": 7675051259.3
+  },
+  "packing": {
+    "method": "geographic_growth_rigid_body_physics",
+    "engine": "Pymunk/Chipmunk",
+    "engine_version": "7.3.1",
+    "convex_piece_count": 695,
+    "collision_mode": "hull",
+    "collision_tolerance": 0.12,
+    "maximum_final_collision_outline_error": 15.536438380434062,
+    "growth_steps": 80,
+    "relax_per_step": 20,
+    "settling_iterations": 4432,
+    "equilibrium_converged": true,
+    "max_final_step_movement": 0.001970590081547983,
+    "position_tolerance": 0.002,
+    "physics_dt": 0.04,
+    "initial_geographic_scale": 0.8643869262548722,
+    "growth_trace": [
+      {
+        "progress": 0.007250000000000001,
+        "max_step_movement": 0.11326769333700096
+      },
+      {
+        "progress": 0.028000000000000004,
+        "max_step_movement": 0.2083181168737187
+      },
+      {
+        "progress": 0.06075,
+        "max_step_movement": 0.14810944758080238
+      },
+      {
+        "progress": 0.10400000000000002,
+        "max_step_movement": 0.14216078219808176
+      },
+      {
+        "progress": 0.15625,
+        "max_step_movement": 0.13321054060985904
+      },
+      {
+        "progress": 0.216,
+        "max_step_movement": 0.12371562274839834
+      },
+      {
+        "progress": 0.28174999999999994,
+        "max_step_movement": 0.11949306779300649
+      },
+      {
+        "progress": 0.3520000000000001,
+        "max_step_movement": 0.0855315140445141
+      },
+      {
+        "progress": 0.4252500000000001,
+        "max_step_movement": 0.08667131247722512
+      },
+      {
+        "progress": 0.5,
+        "max_step_movement": 0.1446080062731493
+      },
+      {
+        "progress": 0.5747500000000001,
+        "max_step_movement": 0.08854513147269315
+      },
+      {
+        "progress": 0.648,
+        "max_step_movement": 0.09310670085010891
+      },
+      {
+        "progress": 0.71825,
+        "max_step_movement": 0.13586188500099267
+      },
+      {
+        "progress": 0.7839999999999999,
+        "max_step_movement": 0.1296416597957015
+      },
+      {
+        "progress": 0.84375,
+        "max_step_movement": 0.19629214537880627
+      },
+      {
+        "progress": 0.8960000000000001,
+        "max_step_movement": 0.46119108564688693
+      },
+      {
+        "progress": 0.9392499999999999,
+        "max_step_movement": 0.47094172070791435
+      },
+      {
+        "progress": 0.972,
+        "max_step_movement": 0.3808898071874627
+      },
+      {
+        "progress": 0.99275,
+        "max_step_movement": 0.2699716000479448
+      },
+      {
+        "progress": 1.0,
+        "max_step_movement": 0.1690128209820461
+      }
+    ],
+    "elapsed_seconds": 31.11692785000014
+  },
+  "omitted_labels": [],
+  "config": {
+    "title": "The world by population",
+    "subtitle": "The same geography, resized by a different quantity",
+    "source_note": "Demo only: Natural Earth POP_EST attributes, mixed historical years; not current population estimates.",
+    "prefix": "",
+    "divisor": 1000000,
+    "suffix": "M",
+    "decimals": 0,
+    "total_area": 10000,
+    "country_gap": 0.4,
+    "cluster_gap": 2.5,
+    "geographic_spread": 0.72,
+    "geographic_pull": 0.002,
+    "cluster_pull": 0.006,
+    "layout_mode": "growth",
+    "growth_steps": 80,
+    "relax_per_step": 20,
+    "settle_steps": 6000,
+    "position_tolerance": 0.002,
+    "physics_dt": 0.04,
+    "contact_iterations": 50,
+    "collision_tolerance": 0.12,
+    "collision_mode": "hull",
+    "damping": 0.7,
+    "iterations": 250,
+    "territory_distance": 12,
+    "parent_pull": 0.04,
+    "satellite_distance": 1.4,
+    "min_part_fraction": 0.001,
+    "max_parts": 24,
+    "simplify": 0.0015,
+    "labels": 14,
+    "label_countries": [
+      "AUS",
+      "BRA",
+      "ZAF"
+    ],
+    "label_offsets": {},
+    "label_aliases": {
+      "GBR": "UK"
+    },
+    "background": "#edf8fa",
+    "ink": "#10243a",
+    "colors": {
+      "North America": "#1679b7",
+      "South America": "#38a36d",
+      "Europe": "#8b4cb0",
+      "Africa": "#edc54f",
+      "Asia": "#e55261",
+      "Oceania": "#f29b45"
+    },
+    "cluster_anchors": {
+      "North America": [
+        -105,
+        42
+      ],
+      "South America": [
+        -62,
+        -18
+      ],
+      "Europe": [
+        12,
+        52
+      ],
+      "Africa": [
+        18,
+        0
+      ],
+      "Asia": [
+        105,
+        32
+      ],
+      "Oceania": [
+        140,
+        -28
+      ]
+    }
+  },
+  "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
+  "input_sha256": "c17670784d0782cb863d05b0532ef16180e56c4f61dc9e26436ef4c97a38f9e1",
+  "boundaries_sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "shapely": "2.2.0",
+    "matplotlib": "3.10.8"
+  }
+}
