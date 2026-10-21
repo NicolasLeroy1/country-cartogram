@@ -246,6 +246,11 @@ or grouping changes require a fresh `src/country_cartogram/pipeline.py` run.
 
 ## Outputs
 
+For two-variable extrusion, use `--volume-column` alongside `--value-column`.
+Area represents the first variable, height is second / first, and volume
+represents the second. See [the 3D guide](3d.md) for installation, examples,
+reusing a saved layout, input validation, and performance measurements.
+
 | File | Contents |
 | --- | --- |
 | `.png` | Presentation-ready raster image |

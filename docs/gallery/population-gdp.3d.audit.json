@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "country_count": 231,
+  "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
+  "encoding": {
+    "area": "area_scale * first variable",
+    "height": "height_scale * second variable / first variable",
+    "volume": "area_scale * height_scale * second variable"
+  },
+  "area_scale": 1.3029230342656428e-06,
+  "height_scale": 0.00032783324725771536,
+  "volume_scale": 4.2714148925018125e-10,
+  "height_scale_mode": "automatic",
+  "extent": [
+    -97.98838370897295,
+    -41.23388747540219,
+    143.92367678671107,
+    89.92774242652948
+  ],
+  "max_height": 60.478015123921004,
+  "max_relative_area_error": 2.360334150353083e-13,
+  "max_relative_volume_error": 8.570921750106208e-14,
+  "max_mesh_relative_volume_error": 1.6653345369377348e-15,
+  "all_positive_height_meshes_closed": true,
+  "zero_height_country_codes": [
+    "PCN"
+  ],
+  "zero_area_zero_volume_country_codes": [],
+  "mesh_vertex_count": 93398,
+  "mesh_triangle_count": 184062,
+  "config": {
+    "title": "Population beneath the world economy",
+    "area_label": "Population (people)",
+    "volume_label": "GDP (USD)",
+    "height_label": "GDP per person (USD)",
+    "source_note": "Demo: Natural Earth POP_EST and GDP_MD; mixed historical years, mostly 2019. Missing GDP excluded; not current statistics.",
+    "height_scale": null
+  },
+  "versions": {
+    "shapely": "2.2.0",
+    "numpy": "2.5.4",
+    "plotly": "6.9.0"
+  },
+  "area_column": "population",
+  "volume_column": "gdp_usd",
+  "layout_sha256": "4a272a8ae5b7b20a701d98cb6525e6bf3348873751b0dafe7c2b07de7838d93a",
+  "input_sha256": "c2c0653a72cea8634a0ea89b9d08d827332031683aeed39988580a40bbdb1e84",
+  "html_js": "cdn",
+  "html_bytes": 4845903,
+  "timings_seconds": {
+    "load": 0.15064001900009316,
+    "mesh_and_audit": 2.1373911159998897,
+    "html": 1.4409447250000085,
+    "preview": 21.929793896000774,
+    "total_before_audit_write": 25.664659972000663
+  }
+}

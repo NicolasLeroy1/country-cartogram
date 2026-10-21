@@ -43,3 +43,34 @@ for name,config in configs.items():
  'retrieved':'2026-10-21','sha256':hashlib.sha256((DATA/'countries.geojson').read_bytes()).hexdigest(),
  'quantity_note':'GDP_MD and POP_EST are historical source attributes with per-row years. Do not use as current statistics.'},indent=2)+'\n')
 print('Prepared',len(catalog),'country and territory definitions')
+
+# A paired input with explicit units. Missing GDP (-99) is excluded, never
+# converted into zero. POP_YEAR and GDP_YEAR are retained separately.
+included = {code for code, row in catalog.items()
+            if row['properties']['POP_EST'] > 0 and row['properties']['GDP_MD'] >= 0}
+with (ROOT/'examples/population-gdp.csv').open('w', newline='') as f:
+    fields = ['country_code', 'population', 'gdp_usd', 'name', 'cluster', 'parent',
+              'population_year', 'gdp_year']
+    writer = csv.DictWriter(f, fieldnames=fields)
+    writer.writeheader()
+    for code in sorted(included):
+        row = catalog[code]
+        parent = row['parent'] if row['parent'] in included else ''
+        writer.writerow({'country_code': code, 'population': row['properties']['POP_EST'],
+                         'gdp_usd': row['properties']['GDP_MD'] * 1_000_000,
+                         'name': row['name'], 'cluster': catalog[parent]['cluster'] if parent else row['cluster'],
+                         'parent': parent, 'population_year': row['properties']['POP_YEAR'],
+                         'gdp_year': row['properties']['GDP_YEAR']})
+(ROOT/'examples/population-gdp.json').write_text(json.dumps({
+    **configs['population'], 'title': 'Population beneath the world economy',
+    'subtitle': 'Footprint area represents population | Paired historical demonstration data',
+    'source_note': 'Natural Earth historical attributes; mixed years. Countries with missing GDP excluded.'
+}, indent=2) + '\n')
+(ROOT/'examples/population-gdp.3d.json').write_text(json.dumps({
+    'title': 'Population beneath the world economy',
+    'area_label': 'Population (people)', 'volume_label': 'GDP (USD)',
+    'height_label': 'GDP per person (USD)',
+    'source_note': 'Demo: Natural Earth POP_EST and GDP_MD; mixed historical years, mostly 2019. Missing GDP excluded; not current statistics.',
+    'height_scale': None,
+}, indent=2) + '\n')
+print('Prepared', len(included), 'paired population/GDP records')

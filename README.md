@@ -21,6 +21,9 @@ historical Natural Earth attributes, not current GDP estimates.
   direction; optional parent links for separately quantified territories.
 - **Audited output:** validate real polygons for overlaps, minimum gaps, and
   proportional areas before exporting PNG, SVG, PDF, coordinates, and metrics.
+- **Two-variable 3D:** footprint area represents a first quantity, height is
+  second / first, and volume represents the second quantity. Rotate, zoom,
+  inspect values, or return to a top view in the interactive HTML.
 - **Reproducible examples:** bundled geography, GDP and population CSVs, an
   animation exporter, a restyling command, tests, and GitHub Actions workflows.
 
@@ -83,6 +86,43 @@ report = run(
 print(report["minimum_country_distance"])
 ```
 
+## Add a second variable in 3D
+
+For example, **area = population**, **height = GDP per capita**, and
+**volume = GDP**. Heights use a common linear scale, so the volume relationship
+holds across all countries.
+
+```bash
+python -m pip install -e '.[3d]'
+country-cartogram examples/population-gdp.csv \
+  --value-column population --volume-column gdp_usd \
+  --config examples/population-gdp.json \
+  --config-3d examples/population-gdp.3d.json \
+  --out output/population-gdp --preview-3d
+```
+
+Open `output/population-gdp.3d.html` locally. The default HTML works offline.
+The optional `.3d.png` uses the same meshes, and `.3d.metrics.csv` /
+`.3d.audit.json` record heights, measured mesh volumes, scale factors, and errors.
+
+![Population as area, GDP per capita as height, GDP as volume](docs/gallery/population-gdp.3d.png)
+
+The [interactive example](docs/gallery/population-gdp.3d.html) is a compact CDN
+export: download its raw file and open it in a browser with internet access.
+GitHub displays HTML source rather than executing the visualization.
+
+When only the second variable changes, reuse the positioned polygons:
+
+```bash
+country-cartogram-3d output/population-gdp.layout.json examples/population-gdp.csv \
+  --area-column population --volume-column gdp_usd \
+  --config examples/population-gdp.3d.json --out output/new-heights
+```
+
+This skips the physics simulation. On the development machine, meshing, auditing,
+and compact HTML export took **1.9 seconds median** for 231 countries / territories
+(184,062 triangles). See [3D usage, mathematics, and benchmarks](docs/3d.md).
+
 ## Examples and checks
 
 ![GDP cartogram](docs/gallery/gdp.png)
@@ -113,6 +153,8 @@ reproducing the examples.
 | `pipeline.py` | CSV validation, orchestration, independent geometry audit, rendering |
 | `evolution.py` | GIF and three-stage overview from solver frames |
 | `restyle.py` | Change presentation without recomputing the layout |
+| `extrusion.py` | Audited bivariate meshes, interactive 3D HTML, optional PNG |
+| `configuration.py` | Shared configuration and stable cluster colors |
 
 These modules live in `src/country_cartogram/`.
 

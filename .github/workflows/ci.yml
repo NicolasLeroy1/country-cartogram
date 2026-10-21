@@ -24,7 +24,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install package and build tool
-        run: python -m pip install '.[dev]'
+        run: python -m pip install '.[dev,3d]'
       - name: Test installed package
         run: python -m unittest discover -s tests -v
       - name: Build wheel and source distribution
@@ -35,4 +35,5 @@ jobs:
           /tmp/cartogram-wheel-check/bin/python -m pip install dist/*.whl
           cd /tmp
           /tmp/cartogram-wheel-check/bin/country-cartogram --help
+          /tmp/cartogram-wheel-check/bin/country-cartogram-3d --help
           /tmp/cartogram-wheel-check/bin/python -c "from country_cartogram.pipeline import ROOT, load_catalog; assert len(load_catalog(ROOT / 'data/countries.geojson')) == 233"

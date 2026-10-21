@@ -5,3 +5,5 @@ shapely==2.2.0
 pyproj==3.8.0
 pymunk==7.3.1
 pillow==12.3.0
+# Optional 3D renderer, used for the paired example.
+plotly==6.9.0

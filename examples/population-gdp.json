@@ -1,0 +1,13 @@
+{
+  "title": "Population beneath the world economy",
+  "subtitle": "Footprint area represents population | Paired historical demonstration data",
+  "source_note": "Natural Earth historical attributes; mixed years. Countries with missing GDP excluded.",
+  "divisor": 1000000,
+  "suffix": "M",
+  "decimals": 0,
+  "label_countries": [
+    "AUS",
+    "BRA",
+    "ZAF"
+  ]
+}

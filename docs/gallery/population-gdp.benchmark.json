@@ -1,0 +1,39 @@
+{
+  "description": "3D mesh generation, audit, and CDN HTML export; no 2D physics or static PNG",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "versions": {
+    "shapely": "2.2.0",
+    "numpy": "2.5.4",
+    "plotly": "6.9.0"
+  },
+  "country_count": 231,
+  "mesh_vertices": 93398,
+  "mesh_triangles": 184062,
+  "html_bytes": 4845904,
+  "runs_seconds": [
+    {
+      "load": 0.06263758699969912,
+      "mesh_and_audit": 1.1987914090004779,
+      "html": 0.9531683499999417,
+      "preview": 6.439995559048839e-07,
+      "total_before_audit_write": 2.220650033000311
+    },
+    {
+      "load": 0.0450250550002238,
+      "mesh_and_audit": 1.335117038000135,
+      "html": 0.4969015919996309,
+      "preview": 5.330002750270069e-07,
+      "total_before_audit_write": 1.8812420500007647
+    },
+    {
+      "load": 0.06352452200007974,
+      "mesh_and_audit": 1.182853683999383,
+      "html": 0.45830805500008864,
+      "preview": 5.100000635138713e-07,
+      "total_before_audit_write": 1.71110772099928
+    }
+  ],
+  "median_seconds": 1.8812420500007647,
+  "max_relative_volume_error": 8.570921750106208e-14
+}

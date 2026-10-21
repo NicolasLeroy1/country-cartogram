@@ -2,7 +2,6 @@
 """CSV -> shape-preserving clustered cartogram -> PNG / SVG / PDF + audit files."""
 from __future__ import annotations
 import argparse
-import colorsys
 import csv
 import hashlib
 import json
@@ -22,67 +21,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.path import Path as MplPath
 from matplotlib.patches import PathPatch, Rectangle
-from matplotlib.colors import to_rgb, to_hex
+from matplotlib.colors import to_rgb
 
 from .geometry import prepare_country, layout_countries, polygon_parts
 from .physics import layout_physics as layout_progressive
 
 ROOT = Path(__file__).resolve().parent
-DEFAULTS = {
-    'title': 'The world, resized',
-    'subtitle': 'Country area represents quantity; color represents cluster',
-    'source_note': 'User-supplied quantities',
-    'prefix': '', 'divisor': 1, 'suffix': '', 'decimals': 1,
-    'total_area': 10000, 'country_gap': .4, 'cluster_gap': 2.5,
-    'geographic_spread': .72, 'geographic_pull': .002, 'cluster_pull': .006,
-    'layout_mode': 'growth', 'growth_steps': 80, 'relax_per_step': 20,
-    'settle_steps': 6000, 'position_tolerance': .002,
-    'physics_dt': .04, 'contact_iterations': 50, 'collision_tolerance': .12,
-    'collision_mode': 'hull',
-    'damping': .7, 'iterations': 250, 'territory_distance': 12, 'parent_pull': .04,
-    'satellite_distance': 1.4, 'min_part_fraction': .001, 'max_parts': 24,
-    'simplify': .0015, 'labels': 14, 'label_countries': [], 'label_offsets': {},
-    'label_aliases': {'GBR': 'UK'},
-    'background': '#edf8fa', 'ink': '#10243a',
-    'colors': {'North America': '#1679b7', 'South America': '#38a36d',
-               'Europe': '#8b4cb0', 'Africa': '#edc54f',
-               'Asia': '#e55261', 'Oceania': '#f29b45'},
-    'cluster_anchors': {'North America': [-105, 42], 'South America': [-62, -18],
-                        'Europe': [12, 52], 'Africa': [18, 0],
-                        'Asia': [105, 32], 'Oceania': [140, -28]},
-}
-
-
-def load_config(path=None):
-    config = json.loads(json.dumps(DEFAULTS))
-    if path:
-        supplied = json.loads(Path(path).read_text())
-        unknown = set(supplied) - set(config)
-        if unknown:
-            raise ValueError(f'Unknown configuration keys: {sorted(unknown)}')
-        for key, value in supplied.items():
-            if key in ('colors', 'cluster_anchors'):
-                config[key].update(value)
-            else:
-                config[key] = value
-    for key in ('total_area', 'divisor', 'geographic_spread', 'satellite_distance', 'territory_distance', 'position_tolerance', 'physics_dt'):
-        if not isinstance(config[key], (float, int)) or not math.isfinite(config[key]) or config[key] <= 0:
-            raise ValueError(f'{key} must be finite and positive')
-    for key in ('country_gap', 'cluster_gap', 'geographic_pull', 'cluster_pull', 'parent_pull', 'simplify', 'min_part_fraction', 'collision_tolerance'):
-        if not isinstance(config[key], (float, int)) or not math.isfinite(config[key]) or config[key] < 0:
-            raise ValueError(f'{key} must be finite and non-negative')
-    for key in ('iterations', 'max_parts', 'labels', 'decimals', 'growth_steps', 'relax_per_step', 'settle_steps', 'contact_iterations'):
-        if not isinstance(config[key], int) or config[key] < (0 if key in ('labels','decimals') else 1):
-            raise ValueError(f'{key} has an invalid integer value')
-    if config['layout_mode'] not in ('growth', 'legacy'):
-        raise ValueError('layout_mode must be growth or legacy')
-    if config['collision_mode'] not in ('hull', 'decomposed'):
-        raise ValueError('collision_mode must be hull or decomposed')
-    if not 0 <= config['damping'] < 1 or not 0 <= config['min_part_fraction'] < 1:
-        raise ValueError('damping and min_part_fraction must be in [0, 1)')
-    for color in [config['background'], config['ink'], *config['colors'].values()]:
-        to_rgb(color)
-    return config
+from .configuration import DEFAULTS, load_config, country_color
 
 
 def load_catalog(boundaries):
@@ -169,17 +114,6 @@ def read_values(path, catalog, value_column='value'):
     return rows, {'omitted_country_codes': sorted(set(catalog) - seen),
                   'zero_country_codes': zero_codes, 'sum_of_values': total}
 
-
-def country_color(row, config):
-    digest = int(hashlib.sha256(row['country_code'].encode()).hexdigest()[:8], 16)
-    group = row['cluster']
-    if group in config['colors']:
-        base = to_rgb(config['colors'][group])
-    else:
-        hue = int(hashlib.sha256(group.encode()).hexdigest()[:8], 16) / 2**32
-        base = colorsys.hls_to_rgb(hue, .52, .5)
-    h, l, sat = colorsys.rgb_to_hls(*base)
-    return to_hex(colorsys.hls_to_rgb(h, min(.75, max(.25, l + (digest / 2**32 - .5) * .17)), sat))
 
 
 def add_geometry(ax, geom, color):
@@ -323,10 +257,21 @@ def audit(geometries, rows, config):
 
 def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
         boundaries=ROOT / 'data/countries.geojson', formats=('png', 'svg', 'pdf'), dpi=180,
-        value_column='value', animate=False):
+        value_column='value', animate=False, volume_column=None, config_3d=None,
+        preview_3d=False, html_js='inline'):
     config = load_config(config_path)
     catalog = load_catalog(boundaries)
     rows, coverage = read_values(csv_path, catalog, value_column)
+    if volume_column:
+        from .extrusion import export_3d, load_3d_config, read_quantity_pairs, require_plotly
+        # Validate both quantities and the optional dependency before simulation.
+        require_plotly()
+        load_3d_config(config_3d)
+        read_quantity_pairs(csv_path, value_column, volume_column)
+        if html_js not in ('inline', 'cdn'):
+            raise ValueError('html_js must be inline or cdn')
+    elif config_3d or preview_3d:
+        raise ValueError('3D configuration / preview requires volume_column')
     if len({r['cluster'] for r in rows}) > 12:
         raise ValueError('The figure template supports at most 12 clusters; split the figure or extend render()')
     geometries, anchors, metadata = [], [], []
@@ -371,6 +316,12 @@ def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
         {**row, 'geometry': mapping(geom), 'position': position.tolist(), 'preprocessing': detail}
         for row, geom, position, detail in zip(rows, placed, positions, metadata)]}
     stem.with_suffix('.layout.json').write_text(json.dumps(layout, separators=(',', ':')) + '\n')
+    if volume_column:
+        diagnostics['extrusion'] = export_3d(
+            stem.with_suffix('.layout.json'), csv_path, volume_column=volume_column,
+            area_column=value_column, output=stem, config_path=config_3d,
+            html_js=html_js, preview=preview_3d)
+        stem.with_suffix('.audit.json').write_text(json.dumps(diagnostics, indent=2) + '\n')
     print(f"Saved {stem}.* | max area error={diagnostics['max_relative_area_error']:.2e} | overlaps=0", flush=True)
     return diagnostics
 
@@ -385,12 +336,18 @@ def main():
     parser.add_argument('--dpi', type=int, default=180)
     parser.add_argument('--value-column', default='value')
     parser.add_argument('--animate', action='store_true', help='Also export a GIF and three-stage overview (growth mode)')
+    parser.add_argument('--volume-column', help='Second quantity: export 3D with height = volume-column / value-column')
+    parser.add_argument('--config-3d', type=Path, help='3D titles, variable labels, and common height_scale')
+    parser.add_argument('--preview-3d', action='store_true', help='Also export a static 3D PNG')
+    parser.add_argument('--html-js', choices=['inline', 'cdn'], default='inline', help='3D HTML: offline (default) or smaller CDN export')
     args = parser.parse_args()
     try:
         if args.dpi < 50:
             raise ValueError('dpi must be at least 50')
         run(args.csv, config_path=args.config, output=args.out, boundaries=args.boundaries,
-            formats=args.formats, dpi=args.dpi, value_column=args.value_column, animate=args.animate)
+            formats=args.formats, dpi=args.dpi, value_column=args.value_column, animate=args.animate,
+            volume_column=args.volume_column, config_3d=args.config_3d,
+            preview_3d=args.preview_3d, html_js=args.html_js)
     except (ValueError, RuntimeError, KeyError) as exc:
         parser.exit(2, f'Error: {exc}\n')
 

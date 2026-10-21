@@ -11,6 +11,7 @@ on:
         options:
           - gdp
           - population
+          - population-gdp
 
 permissions:
   contents: read
@@ -26,11 +27,18 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pyproject.toml
-      - run: python -m pip install .
+      - run: python -m pip install '.[3d]'
       - name: Generate and audit the cartogram
         env:
           DATASET: ${{ inputs.dataset }}
-        run: country-cartogram "examples/${DATASET}.csv" --config "examples/${DATASET}.json" --out "output/${DATASET}" --animate
+        run: |
+          if [ "$DATASET" = "population-gdp" ]; then
+            country-cartogram examples/population-gdp.csv --value-column population --volume-column gdp_usd \
+              --config examples/population-gdp.json --config-3d examples/population-gdp.3d.json \
+              --out output/population-gdp --preview-3d
+          else
+            country-cartogram "examples/${DATASET}.csv" --config "examples/${DATASET}.json" --out "output/${DATASET}" --animate
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cartogram-${{ inputs.dataset }}
