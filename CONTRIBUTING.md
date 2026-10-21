@@ -23,6 +23,8 @@ country-cartogram examples/population.csv --config examples/population.json --ou
 country-cartogram examples/population-gdp.csv --value-column population --volume-column gdp_usd \
   --config examples/population-gdp.json --config-3d examples/population-gdp.3d.json \
   --out output/population-gdp --preview-3d --html-js cdn
+country-cartogram-timeline examples/population-timeline.csv \
+  --config examples/population-timeline.json --out output/history --gif
 ```
 
 The sample data are demonstrations, not up-to-date statistical estimates.
@@ -37,6 +39,11 @@ alone is not enough. Keep scientific data and presentation changes separable:
 first-quantity layout. For extrusion changes, check concavities, holes, islands,
 zero heights, watertightness, and independently measured mesh volumes. Run
 `scripts/benchmark_3d.py` to measure the 3D stage without conflating it with physics.
+For continuation changes, verify that the first captured state matches the
+previous endpoint, the original geographic anchors survive multiple updates,
+islands stay compacted, and one fixed area-per-unit factor survives both period
+transitions and checkpoint restarts. Record solver timings and movement before
+claiming a temporal stability or performance improvement.
 
 Useful extension points and known tradeoffs are in
 [the algorithm notes](docs/algorithm.md). Changes to the collision approximation

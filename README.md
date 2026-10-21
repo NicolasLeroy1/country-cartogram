@@ -24,6 +24,8 @@ historical Natural Earth attributes, not current GDP estimates.
 - **Two-variable 3D:** footprint area represents a first quantity, height is
   second / first, and volume represents the second quantity. Rotate, zoom,
   inspect values, or return to a top view in the interactive HTML.
+- **Temporal continuity:** start a new map from the previous layout, or process
+  a series of years with fixed absolute scaling and lightweight SVG playback.
 - **Reproducible examples:** bundled geography, GDP and population CSVs, an
   animation exporter, a restyling command, tests, and GitHub Actions workflows.
 
@@ -123,6 +125,50 @@ This skips the physics simulation. On the development machine, meshing, auditing
 and compact HTML export took **1.9 seconds median** for 231 countries / territories
 (184,062 triangles). See [3D usage, mathematics, and benchmarks](docs/3d.md).
 
+## Continue through time
+
+Start the next map from a saved layout instead of restarting from geography:
+
+```bash
+country-cartogram values_2021.csv --initial-layout output/map_2020.layout.json \
+  --config my_config.json --out output/map_2021 --animate
+```
+
+The previous country positions, sizes, and compacted islands become the initial
+state. The original geographic anchors are retained. Small changes use fewer
+resizing stages, followed by the usual collision checks and settling criterion.
+
+For a long CSV with `year,country_code,value` columns:
+
+```bash
+country-cartogram-timeline examples/population-timeline.csv \
+  --config examples/population-timeline.json --out output/history --gif
+```
+
+Open `output/history/timeline.html` to play or scrub actual solver states. The
+HTML stores each outline once and animates only positions and scale factors.
+It works offline. Each period also has its own audited layout and figures.
+The example is a clearly labeled **synthetic scenario**, not observed history.
+
+![Audited period endpoints in the synthetic population scenario](docs/gallery/population-timeline.gif)
+
+Download the [interactive timeline](docs/gallery/population-timeline.html) and
+open it locally for the actual resizing and settling frames. The example's
+physics took 28.7 seconds for the initial map, then 3.2 and 2.2 seconds for the
+continued periods; all three reached the same convergence tolerance.
+
+To append new observations in another run:
+
+```bash
+country-cartogram-timeline later_years.csv --initial-layout output/history/2022.layout.json \
+  --initial-time 2022 --config my_config.json --out output/later-history
+```
+
+The default timeline uses the same area per unit across periods. Use
+`--normalization shares` to compare shares with a constant total map area.
+Continuation requires consistent positive country coverage and grouping.
+See [time-series inputs, checkpoints, and normalization](docs/time-series.md).
+
 ## Examples and checks
 
 ![GDP cartogram](docs/gallery/gdp.png)
@@ -155,6 +201,8 @@ reproducing the examples.
 | `restyle.py` | Change presentation without recomputing the layout |
 | `extrusion.py` | Audited bivariate meshes, interactive 3D HTML, optional PNG |
 | `configuration.py` | Shared configuration and stable cluster colors |
+| `continuation.py` | Previous layouts as initial shapes and positions |
+| `timeline.py` | Ordered periods, checkpoint continuation, compact SVG playback |
 
 These modules live in `src/country_cartogram/`.
 

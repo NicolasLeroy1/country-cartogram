@@ -1,6 +1,6 @@
 * text=auto eol=lf
 # Preserve input bytes so their committed checksums match the example audits.
-*.csv -text
+*.csv -text whitespace=cr-at-eol
 *.png binary
 *.gif binary
 *.pdf binary

@@ -12,6 +12,7 @@ on:
           - gdp
           - population
           - population-gdp
+          - population-timeline
 
 permissions:
   contents: read
@@ -32,7 +33,10 @@ jobs:
         env:
           DATASET: ${{ inputs.dataset }}
         run: |
-          if [ "$DATASET" = "population-gdp" ]; then
+          if [ "$DATASET" = "population-timeline" ]; then
+            country-cartogram-timeline examples/population-timeline.csv \
+              --config examples/population-timeline.json --out output/population-timeline --gif
+          elif [ "$DATASET" = "population-gdp" ]; then
             country-cartogram examples/population-gdp.csv --value-column population --volume-column gdp_usd \
               --config examples/population-gdp.json --config-3d examples/population-gdp.3d.json \
               --out output/population-gdp --preview-3d

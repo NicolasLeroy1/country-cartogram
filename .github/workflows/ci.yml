@@ -36,4 +36,5 @@ jobs:
           cd /tmp
           /tmp/cartogram-wheel-check/bin/country-cartogram --help
           /tmp/cartogram-wheel-check/bin/country-cartogram-3d --help
+          /tmp/cartogram-wheel-check/bin/country-cartogram-timeline --help
           /tmp/cartogram-wheel-check/bin/python -c "from country_cartogram.pipeline import ROOT, load_catalog; assert len(load_catalog(ROOT / 'data/countries.geojson')) == 233"

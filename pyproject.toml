@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "country-cartogram"
-version = "0.2.0"
+version = "0.3.0"
 description = "Shape-preserving country cartograms with gradual resizing and clustered rigid-body physics"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,6 +28,7 @@ dev = ["build>=1.2,<2"]
 country-cartogram = "country_cartogram.pipeline:main"
 country-cartogram-restyle = "country_cartogram.restyle:main"
 country-cartogram-3d = "country_cartogram.extrusion:main"
+country-cartogram-timeline = "country_cartogram.timeline:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

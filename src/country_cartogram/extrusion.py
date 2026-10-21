@@ -53,7 +53,7 @@ def require_plotly():
     try:
         import plotly.graph_objects as go
     except ImportError as exc:
-        raise ValueError('3D HTML export needs Plotly. Install with: pip install "country-cartogram[3d]"') from exc
+        raise ValueError('3D HTML export needs Plotly. From the repository root, run: pip install -e ".[3d]"') from exc
     return go
 
 

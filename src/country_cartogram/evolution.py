@@ -6,7 +6,7 @@ from PIL import Image
 from .pipeline import add_geometry, country_color
 
 
-def render_evolution(frames, rows, config, stem):
+def render_evolution(frames, rows, config, stem, initial_label='Geographic start'):
     bounds = np.array([shapely.total_bounds(f['geometries']) for f in frames])
     xmin, ymin = bounds[:, :2].min(axis=0)
     xmax, ymax = bounds[:, 2:].max(axis=0)
@@ -19,7 +19,7 @@ def render_evolution(frames, rows, config, stem):
             add_geometry(ax, geometry, country_color(row, config))
         ax.set_xlim(xmin - padding, xmax + padding); ax.set_ylim(ymin - padding, ymax + padding)
         ax.set_aspect('equal'); ax.axis('off')
-        heading = 'Geographic start' if k == 0 else (
+        heading = initial_label if k == 0 else (
             'After settling' if k == len(frames) - 1 else f"Resizing: {frame['progress']:.0%}")
         fig.suptitle(heading, fontsize=19, color=config['ink'], weight='bold', y=.96)
         fig.text(.5, .04, 'Local polygon repulsion + long-range attraction within each cluster',
@@ -33,7 +33,7 @@ def render_evolution(frames, rows, config, stem):
                    duration=durations, loop=0)
     chosen = [0, min(range(len(frames)), key=lambda i: abs(frames[i]['progress'] - .5)), len(frames)-1]
     fig, axes = plt.subplots(1, 3, figsize=(18, 6), facecolor=config['background'])
-    for ax, index, title in zip(axes, chosen, ['Geographic start', 'Halfway through resizing', 'After settling']):
+    for ax, index, title in zip(axes, chosen, [initial_label, 'Halfway through resizing', 'After settling']):
         for geometry, row in zip(frames[index]['geometries'], rows):
             add_geometry(ax, geometry, country_color(row, config))
         ax.set_xlim(xmin - padding, xmax + padding); ax.set_ylim(ymin - padding, ymax + padding)

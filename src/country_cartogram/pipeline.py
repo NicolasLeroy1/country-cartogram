@@ -258,7 +258,7 @@ def audit(geometries, rows, config):
 def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
         boundaries=ROOT / 'data/countries.geojson', formats=('png', 'svg', 'pdf'), dpi=180,
         value_column='value', animate=False, volume_column=None, config_3d=None,
-        preview_3d=False, html_js='inline'):
+        preview_3d=False, html_js='inline', initial_layout=None, frame_sink=None):
     config = load_config(config_path)
     catalog = load_catalog(boundaries)
     rows, coverage = read_values(csv_path, catalog, value_column)
@@ -274,17 +274,27 @@ def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
         raise ValueError('3D configuration / preview requires volume_column')
     if len({r['cluster'] for r in rows}) > 12:
         raise ValueError('The figure template supports at most 12 clusters; split the figure or extend render()')
-    geometries, anchors, metadata = [], [], []
-    for row in rows:
-        target = row['value'] / coverage['sum_of_values'] * config['total_area']
-        geom, anchor, detail = prepare_country(catalog[row['country_code']]['geometry'], target,
-                 **{k: config[k] for k in ['min_part_fraction', 'max_parts', 'simplify', 'satellite_distance']})
-        geometries.append(geom); anchors.append(anchor); metadata.append(detail)
+    boundaries_hash = hashlib.sha256(Path(boundaries).read_bytes()).hexdigest()
+    initial_state = None
+    if initial_layout:
+        if config['layout_mode'] != 'growth':
+            raise ValueError('initial_layout requires growth mode')
+        from .continuation import prepare_continuation
+        geometries, anchors, metadata, initial_state = prepare_continuation(
+            initial_layout, rows, config, boundaries_hash)
+    else:
+        geometries, anchors, metadata = [], [], []
+        for row in rows:
+            target = row['value'] / coverage['sum_of_values'] * config['total_area']
+            geom, anchor, detail = prepare_country(catalog[row['country_code']]['geometry'], target,
+                     **{k: config[k] for k in ['min_part_fraction', 'max_parts', 'simplify', 'satellite_distance']})
+            geometries.append(geom); anchors.append(anchor); metadata.append(detail)
     print(f'Packing {len(rows)} countries in {len({r["cluster"] for r in rows})} clusters...', flush=True)
     frames = []
     if config['layout_mode'] == 'growth':
         placed, positions, packing, frames = layout_progressive(
-            geometries, np.array(anchors), rows, metadata, config, capture=animate)
+            geometries, np.array(anchors), rows, metadata, config, capture=animate,
+            initial_state=initial_state, frame_sink=frame_sink)
         if not packing['equilibrium_converged']:
             warnings.warn('Settling reached its iteration limit; see equilibrium diagnostics in the audit')
     else:
@@ -295,13 +305,17 @@ def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
     omitted_labels = render(placed, rows, config, stem, formats, dpi)
     if frames:
         from .evolution import render_evolution
-        render_evolution(frames, rows, config, stem)
+        render_evolution(frames, rows, config, stem,
+                         initial_label='Previous layout' if initial_state else 'Geographic start')
     diagnostics.update({'coverage': coverage, 'packing': packing, 'omitted_labels': omitted_labels,
                          'config': config, 'coordinate_system': 'arbitrary cartogram chart units; NOT longitude/latitude',
                          'input_sha256': hashlib.sha256(Path(csv_path).read_bytes()).hexdigest(),
-                         'boundaries_sha256': hashlib.sha256(Path(boundaries).read_bytes()).hexdigest(),
+                         'boundaries_sha256': boundaries_hash,
                          'versions': {'python': sys.version.split()[0], 'numpy': np.__version__,
                                       'shapely': shapely.__version__, 'matplotlib': matplotlib.__version__}})
+    if initial_state:
+        diagnostics['continuation'] = {'initial_layout_sha256': initial_state['layout_sha256'],
+                                       'reused_country_count': len(rows)}
     stem.with_suffix('.audit.json').write_text(json.dumps(diagnostics, indent=2) + '\n')
     with stem.with_suffix('.metrics.csv').open('w', newline='') as f:
         fields = ['country_code', 'name', 'cluster', 'parent', 'value', 'share', 'rendered_area',
@@ -312,9 +326,19 @@ def run(csv_path, *, config_path=None, output=Path('output/cartogram'),
             writer.writerow({**{k: row[k] for k in fields[:5]}, 'share': share, 'rendered_area': geom.area,
                     'relative_area_error': geom.area / (share * config['total_area']) - 1,
                     **{k: detail[k] for k in fields[-2:]}})
-    layout = {'coordinate_system': diagnostics['coordinate_system'], 'countries': [
+    layout = {'schema_version': 2, 'coordinate_system': diagnostics['coordinate_system'], 'countries': [
         {**row, 'geometry': mapping(geom), 'position': position.tolist(), 'preprocessing': detail}
         for row, geom, position, detail in zip(rows, placed, positions, metadata)]}
+    if config['layout_mode'] == 'growth':
+        from .continuation import GEOMETRY_KEYS
+        anchor_factor = 1 if initial_state else packing['initial_geographic_scale']
+        layout['simulation_state'] = {
+            'geographic_scale': packing['initial_geographic_scale'],
+            'geographic_anchors': {r['country_code']: (np.asarray(a) * anchor_factor).tolist()
+                                   for r, a in zip(rows, anchors)},
+            'geometry_config': {key: config[key] for key in GEOMETRY_KEYS},
+            'boundaries_sha256': boundaries_hash,
+        }
     stem.with_suffix('.layout.json').write_text(json.dumps(layout, separators=(',', ':')) + '\n')
     if volume_column:
         diagnostics['extrusion'] = export_3d(
@@ -340,6 +364,7 @@ def main():
     parser.add_argument('--config-3d', type=Path, help='3D titles, variable labels, and common height_scale')
     parser.add_argument('--preview-3d', action='store_true', help='Also export a static 3D PNG')
     parser.add_argument('--html-js', choices=['inline', 'cdn'], default='inline', help='3D HTML: offline (default) or smaller CDN export')
+    parser.add_argument('--initial-layout', type=Path, help='Continue from a previous .layout.json instead of geographic initialization')
     args = parser.parse_args()
     try:
         if args.dpi < 50:
@@ -347,7 +372,7 @@ def main():
         run(args.csv, config_path=args.config, output=args.out, boundaries=args.boundaries,
             formats=args.formats, dpi=args.dpi, value_column=args.value_column, animate=args.animate,
             volume_column=args.volume_column, config_3d=args.config_3d,
-            preview_3d=args.preview_3d, html_js=args.html_js)
+            preview_3d=args.preview_3d, html_js=args.html_js, initial_layout=args.initial_layout)
     except (ValueError, RuntimeError, KeyError) as exc:
         parser.exit(2, f'Error: {exc}\n')
 

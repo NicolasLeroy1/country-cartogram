@@ -246,6 +246,11 @@ or grouping changes require a fresh `src/country_cartogram/pipeline.py` run.
 
 ## Outputs
 
+Use `--initial-layout previous.layout.json` to continue a single map, or
+`country-cartogram-timeline` for an ordered time series. See the
+[time-series guide](time-series.md) for fixed absolute scaling, checkpoints,
+input compatibility, and compact SVG playback.
+
 For two-variable extrusion, use `--volume-column` alongside `--value-column`.
 Area represents the first variable, height is second / first, and volume
 represents the second. See [the 3D guide](3d.md) for installation, examples,

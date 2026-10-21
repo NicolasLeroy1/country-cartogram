@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "normalization": "fixed",
+  "fixed_area_scale": 1.3029228942129626e-06,
+  "input_sha256": "ce08517ed85714bfbe29ac450e711e88b37b881a412db0148fffa1b115d1f178",
+  "time_column": "year",
+  "value_column": "value",
+  "country_count": 232,
+  "frame_count": 16,
+  "period_count": 3,
+  "periods": [
+    {
+      "year": 2020,
+      "total_value": 7675051259.3,
+      "area_scale": 1.3029228942129626e-06,
+      "layout": "2020.layout.json",
+      "packing": {
+        "method": "geographic_growth_rigid_body_physics",
+        "engine": "Pymunk/Chipmunk",
+        "engine_version": "7.3.1",
+        "convex_piece_count": 695,
+        "collision_mode": "hull",
+        "collision_tolerance": 0.12,
+        "maximum_final_collision_outline_error": 15.536438380434062,
+        "growth_steps": 80,
+        "relax_per_step": 20,
+        "settling_iterations": 4432,
+        "equilibrium_converged": true,
+        "max_final_step_movement": 0.001970590081547983,
+        "position_tolerance": 0.002,
+        "physics_dt": 0.04,
+        "initial_geographic_scale": 0.8643869262548722,
+        "growth_trace": [
+          {
+            "progress": 0.007250000000000001,
+            "max_step_movement": 0.11326769333700096
+          },
+          {
+            "progress": 0.028000000000000004,
+            "max_step_movement": 0.2083181168737187
+          },
+          {
+            "progress": 0.06075,
+            "max_step_movement": 0.14810944758080238
+          },
+          {
+            "progress": 0.10400000000000002,
+            "max_step_movement": 0.14216078219808176
+          },
+          {
+            "progress": 0.15625,
+            "max_step_movement": 0.13321054060985904
+          },
+          {
+            "progress": 0.216,
+            "max_step_movement": 0.12371562274839834
+          },
+          {
+            "progress": 0.28174999999999994,
+            "max_step_movement": 0.11949306779300649
+          },
+          {
+            "progress": 0.3520000000000001,
+            "max_step_movement": 0.0855315140445141
+          },
+          {
+            "progress": 0.4252500000000001,
+            "max_step_movement": 0.08667131247722512
+          },
+          {
+            "progress": 0.5,
+            "max_step_movement": 0.1446080062731493
+          },
+          {
+            "progress": 0.5747500000000001,
+            "max_step_movement": 0.08854513147269315
+          },
+          {
+            "progress": 0.648,
+            "max_step_movement": 0.09310670085010891
+          },
+          {
+            "progress": 0.71825,
+            "max_step_movement": 0.13586188500099267
+          },
+          {
+            "progress": 0.7839999999999999,
+            "max_step_movement": 0.1296416597957015
+          },
+          {
+            "progress": 0.84375,
+            "max_step_movement": 0.19629214537880627
+          },
+          {
+            "progress": 0.8960000000000001,
+            "max_step_movement": 0.46119108564688693
+          },
+          {
+            "progress": 0.9392499999999999,
+            "max_step_movement": 0.47094172070791435
+          },
+          {
+            "progress": 0.972,
+            "max_step_movement": 0.3808898071874627
+          },
+          {
+            "progress": 0.99275,
+            "max_step_movement": 0.2699716000479448
+          },
+          {
+            "progress": 1.0,
+            "max_step_movement": 0.1690128209820461
+          }
+        ],
+        "elapsed_seconds": 28.73200037099923,
+        "mean_displacement_from_start": 23.833947399044657,
+        "max_displacement_from_start": 244.91602187873343
+      },
+      "max_relative_area_error": 2.3447910280083306e-13,
+      "minimum_country_distance": 0.41900001789375424,
+      "overlap_pairs": [],
+      "continuation": null
+    },
+    {
+      "year": 2021,
+      "total_value": 7777734734.165,
+      "area_scale": 1.3029228942129624e-06,
+      "layout": "2021.layout.json",
+      "packing": {
+        "method": "continued_growth_rigid_body_physics",
+        "engine": "Pymunk/Chipmunk",
+        "engine_version": "7.3.1",
+        "convex_piece_count": 695,
+        "collision_mode": "hull",
+        "collision_tolerance": 0.12,
+        "maximum_final_collision_outline_error": 15.68621242063698,
+        "growth_steps": 4,
+        "relax_per_step": 20,
+        "settling_iterations": 730,
+        "equilibrium_converged": true,
+        "max_final_step_movement": 0.0019524018959074041,
+        "position_tolerance": 0.002,
+        "physics_dt": 0.04,
+        "initial_geographic_scale": 0.8643869262548722,
+        "growth_trace": [
+          {
+            "progress": 0.15625,
+            "max_step_movement": 0.00531357201748636
+          },
+          {
+            "progress": 0.5,
+            "max_step_movement": 0.008732204665436609
+          },
+          {
+            "progress": 0.84375,
+            "max_step_movement": 0.008928403134178057
+          },
+          {
+            "progress": 1.0,
+            "max_step_movement": 0.0075289315683465235
+          }
+        ],
+        "elapsed_seconds": 3.249037382000097,
+        "mean_displacement_from_start": 0.4952812430736739,
+        "max_displacement_from_start": 3.0373544922817524
+      },
+      "max_relative_area_error": 2.078337502098293e-13,
+      "minimum_country_distance": 0.41899990650093455,
+      "overlap_pairs": [],
+      "continuation": {
+        "initial_layout_sha256": "3ad542bec7a3a3f667bdaae87cf3b9b67872d3a40520e6a0fe15bbd2385c1906",
+        "reused_country_count": 232
+      }
+    },
+    {
+      "year": 2022,
+      "total_value": 7882601766.98,
+      "area_scale": 1.3029228942129626e-06,
+      "layout": "2022.layout.json",
+      "packing": {
+        "method": "continued_growth_rigid_body_physics",
+        "engine": "Pymunk/Chipmunk",
+        "engine_version": "7.3.1",
+        "convex_piece_count": 695,
+        "collision_mode": "hull",
+        "collision_tolerance": 0.12,
+        "maximum_final_collision_outline_error": 15.837430309329042,
+        "growth_steps": 4,
+        "relax_per_step": 20,
+        "settling_iterations": 168,
+        "equilibrium_converged": true,
+        "max_final_step_movement": 0.0019208295043874582,
+        "position_tolerance": 0.002,
+        "physics_dt": 0.04,
+        "initial_geographic_scale": 0.8643869262548722,
+        "growth_trace": [
+          {
+            "progress": 0.15625,
+            "max_step_movement": 0.005270820875305269
+          },
+          {
+            "progress": 0.5,
+            "max_step_movement": 0.008104618133450281
+          },
+          {
+            "progress": 0.84375,
+            "max_step_movement": 0.009402149911714421
+          },
+          {
+            "progress": 1.0,
+            "max_step_movement": 0.005784488769705594
+          }
+        ],
+        "elapsed_seconds": 2.2060263080002187,
+        "mean_displacement_from_start": 0.33109829740557833,
+        "max_displacement_from_start": 1.1457163486056412
+      },
+      "max_relative_area_error": 2.9976021664879227e-13,
+      "minimum_country_distance": 0.4189960100620547,
+      "overlap_pairs": [],
+      "continuation": {
+        "initial_layout_sha256": "09df96ff47c8e5dae1a6223c31f4037520b2e042a4dbf1dc5bd5a8e36fa4b325",
+        "reused_country_count": 232
+      }
+    }
+  ],
+  "initial_layout_sha256": null,
+  "html_bytes": 1456143,
+  "note": "Intermediate frames are real solver states, not additional observations; endpoint maps are audited."
+}

@@ -74,3 +74,25 @@ with (ROOT/'examples/population-gdp.csv').open('w', newline='') as f:
     'height_scale': None,
 }, indent=2) + '\n')
 print('Prepared', len(included), 'paired population/GDP records')
+
+# A synthetic time series, not a claim about observed historical growth.
+included = {code for code, row in catalog.items() if row['properties']['POP_EST'] > 0}
+with (ROOT/'examples/population-timeline.csv').open('w', newline='') as f:
+    fields = ['year', 'country_code', 'value', 'name', 'cluster', 'parent', 'source_population_year']
+    writer = csv.DictWriter(f, fieldnames=fields)
+    writer.writeheader()
+    for year in (2020, 2021, 2022):
+        for code in sorted(included):
+            row = catalog[code]
+            parent = row['parent'] if row['parent'] in included else ''
+            variation = int(hashlib.sha256(code.encode()).hexdigest()[:8], 16) / 2**32
+            annual_factor = .99 + .04 * variation
+            value = round(row['properties']['POP_EST'] * annual_factor ** (year - 2020), 3)
+            writer.writerow({'year': year, 'country_code': code, 'value': value, 'name': row['name'],
+                             'cluster': catalog[parent]['cluster'] if parent else row['cluster'],
+                             'parent': parent, 'source_population_year': row['properties']['POP_YEAR']})
+(ROOT/'examples/population-timeline.json').write_text(json.dumps({
+    **configs['population'], 'title': 'Population through three simulated years',
+    'subtitle': 'Synthetic scenario | Constant area per person across periods',
+    'source_note': 'Synthetic 2020–2022 scenario from historical Natural Earth population attributes; illustrative growth rates, not observed history.',
+}, indent=2) + '\n')

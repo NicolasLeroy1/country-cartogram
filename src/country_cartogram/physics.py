@@ -23,10 +23,19 @@ def convex_pieces(polygon):
     return [np.asarray(p.exterior.coords)[:-1] for p in triangles.geoms if p.area > 1e-14]
 
 
-def layout_physics(final_geometries, anchors, rows, metadata, config, capture=False):
+def layout_physics(final_geometries, anchors, rows, metadata, config, capture=False,
+                   initial_state=None, frame_sink=None):
     started = time.monotonic()
-    growth = GrowthShapes(final_geometries, metadata, config['total_area'])
-    anchors = np.asarray(anchors) * growth.geographic_scale
+    continuing = initial_state is not None
+    if continuing:
+        growth = GrowthShapes.from_previous(final_geometries, metadata, initial_state['areas'],
+                                             initial_state['geographic_scale'])
+        anchors = np.asarray(initial_state['anchors'])
+        start_positions = np.asarray(initial_state['positions'])
+    else:
+        growth = GrowthShapes(final_geometries, metadata, config['total_area'])
+        anchors = np.asarray(anchors) * growth.geographic_scale
+        start_positions = anchors
     masses = growth.target_areas
     space = pymunk.Space()
     space.gravity = (0, 0)
@@ -37,11 +46,11 @@ def layout_physics(final_geometries, anchors, rows, metadata, config, capture=Fa
     # A small numerical margin makes the final true-polygon gap at least the
     # requested one despite the engine's contact slop.
     radius = config['country_gap'] / 2 + .01
-    maximum_factors = np.maximum(1., growth.geographic_scale / growth.final_scales)
+    maximum_factors = np.sqrt(np.maximum(growth.initial_areas, growth.target_areas) / growth.target_areas)
     max_outline_error = 0.
     for i, parts in enumerate(growth.parts):
         body = pymunk.Body(float(masses[i]), math.inf)
-        body.position = tuple(anchors[i])
+        body.position = tuple(start_positions[i])
         space.add(body); bodies.append(body)
         for part_index, (outline, _, _) in enumerate(parts):
             tolerance = config['collision_tolerance'] / maximum_factors[i]
@@ -89,24 +98,30 @@ def layout_physics(final_geometries, anchors, rows, metadata, config, capture=Fa
         for body in bodies:
             space.reindex_shapes_for_body(body)
 
-    def capture_frame(progress):
-        if capture:
+    def capture_frame(progress, phase='growth'):
+        if capture or frame_sink is not None:
             p = positions()
+        if frame_sink is not None:
+            # A timeline only needs per-country transforms. Avoid constructing
+            # and retaining coastlines for every captured simulation step.
+            frame_sink({'progress': float(progress), 'phase': phase, 'positions': p.copy(),
+                        'areas': (1 - progress) * growth.initial_areas + progress * growth.target_areas})
+        if capture:
             frames.append({'progress': float(progress), 'positions': p,
                            'geometries': [translate(g, *xy) for g, xy in zip(growth.at(progress), p)]})
 
     def advance(progress):
         previous = positions()
-        anchor_targets = (1 - progress) * anchors + progress * final_anchors
+        anchor_targets = final_anchors if continuing else (1 - progress) * anchors + progress * final_anchors
         acceleration = config['geographic_pull'] * (anchor_targets - previous)
         for indices in groups:
             center = np.average(previous[indices], axis=0, weights=masses[indices])
             acceleration[indices] += config['cluster_pull'] * (center - previous[indices])
         forces = masses[:, None] * acceleration
         for child, parent, original, compact in links:
-            offset = (1 - progress) * original + progress * compact
+            offset = compact if continuing else (1 - progress) * original + progress * compact
             reduced_mass = masses[child] * masses[parent] / (masses[child] + masses[parent])
-            force = config['parent_pull'] * progress * reduced_mass * (previous[parent] + offset - previous[child])
+            force = config['parent_pull'] * (1 if continuing else progress) * reduced_mass * (previous[parent] + offset - previous[child])
             forces[child] += force; forces[parent] -= force
         for i, body in enumerate(bodies):
             body.force = tuple(forces[i])
@@ -118,6 +133,11 @@ def layout_physics(final_geometries, anchors, rows, metadata, config, capture=Fa
 
     resize(0); capture_frame(0)
     steps = config['growth_steps']
+    if continuing:
+        change = float(np.max(np.abs(np.log(growth.target_areas / growth.initial_areas))))
+        # Small annual changes need fewer resize/reindex stages. Large changes
+        # retain the full budget; settling still uses the same stopping rule.
+        steps = 0 if change < 1e-12 else min(steps, max(4, math.ceil(steps * min(1., change))))
     for step in range(1, steps + 1):
         u = step / steps
         progress = u * u * (3 - 2 * u)
@@ -137,11 +157,14 @@ def layout_physics(final_geometries, anchors, rows, metadata, config, capture=Fa
             converged = True; break
         if settling and settling % 200 == 0:
             print(f'  settling {settling}; max movement {movement:.5f} ({advance.worst})', flush=True)
-    capture_frame(1.)
+            if frame_sink is not None:
+                capture_frame(1., 'settling')
+    capture_frame(1., 'settled')
     p = positions()
     placed = [translate(g, *xy) for g, xy in zip(final_geometries, p)]
     return placed, p, {
-        'method': 'geographic_growth_rigid_body_physics', 'engine': 'Pymunk/Chipmunk',
+        'method': 'continued_growth_rigid_body_physics' if continuing else 'geographic_growth_rigid_body_physics',
+        'engine': 'Pymunk/Chipmunk',
         'engine_version': pymunk.version, 'convex_piece_count': len(fixtures),
         'collision_mode': config['collision_mode'],
         'collision_tolerance': config['collision_tolerance'],
@@ -151,4 +174,6 @@ def layout_physics(final_geometries, anchors, rows, metadata, config, capture=Fa
         'max_final_step_movement': movement, 'position_tolerance': config['position_tolerance'],
         'physics_dt': config['physics_dt'], 'initial_geographic_scale': growth.geographic_scale,
         'growth_trace': trace, 'elapsed_seconds': time.monotonic() - started,
+        'mean_displacement_from_start': float(np.mean(np.linalg.norm(p - start_positions, axis=1))),
+        'max_displacement_from_start': float(np.max(np.linalg.norm(p - start_positions, axis=1))),
     }, frames
