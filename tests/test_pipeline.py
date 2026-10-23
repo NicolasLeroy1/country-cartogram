@@ -234,7 +234,7 @@ class GrowthTests(unittest.TestCase):
             source, 120, simplify=0, min_part_fraction=0
         )
         shapes = GrowthShapes([geometry], [detail], 120)
-        start = shapes.at(0)[0]
+        start = shapes.at(0, shapes.offsets)[0]
         expected_offset = (
             np.array(detail["parts"][1]["source_center"])
             - np.array(detail["parts"][0]["source_center"])
@@ -243,7 +243,8 @@ class GrowthTests(unittest.TestCase):
             start.geoms[0].centroid.coords[0]
         )
         np.testing.assert_allclose(actual_offset, expected_offset, atol=1e-9)
-        self.assertTrue(shapes.at(1)[0].equals_exact(geometry, 1e-10))
+        final_positions = np.array([p.centroid.coords[0] for p in geometry.geoms])
+        self.assertTrue(shapes.at(1, final_positions)[0].equals_exact(geometry, 1e-10))
 
     def test_group_attraction_active_during_growth(self):
         rows = [

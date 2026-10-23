@@ -18,6 +18,7 @@ from .pipeline import run
 from .maps import DEFAULT_BOUNDARIES, load_map, add_map_arguments
 from .values import read_table, read_values, read_quantity_pairs
 from .rendering import add_geometry
+from .geometry import polygon_parts
 
 
 def fill_missing_periods(periods, value_column="value", method="interpolate"):
@@ -315,6 +316,11 @@ def run_timeline(
                 "phase": "settled",
                 "progress": 1.0,
                 "positions": [r["position"] for r in base["regions"]],
+                "part_positions": [
+                    list(part.centroid.coords[0])
+                    for r in base["regions"]
+                    for part in polygon_parts(shape(r["geometry"]))
+                ],
                 "scales": [1.0] * len(base_areas),
             }
         )
@@ -344,6 +350,7 @@ def run_timeline(
                     "phase": frame["phase"],
                     "progress": frame["progress"],
                     "positions": frame["positions"].tolist(),
+                    "part_positions": frame["part_positions"].tolist(),
                     "scales": np.sqrt(frame["areas"] / base_areas).tolist(),
                 }
             )
@@ -376,6 +383,11 @@ def run_timeline(
                     "phase": "settled",
                     "progress": 1.0,
                     "positions": [row["position"] for row in layout["regions"]],
+                    "part_positions": [
+                        list(part.centroid.coords[0])
+                        for row in layout["regions"]
+                        for part in polygon_parts(shape(row["geometry"]))
+                    ],
                     "scales": [1.0] * len(base_areas),
                 }
             )

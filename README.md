@@ -66,7 +66,10 @@ Open `output/gdp-1985-2024/timeline.html`, or download the
 
 The map follows 209 economies from 1985 to 2024. Area shows each economy's share
 of the included GDP, measured in constant 2015 US dollars. Countries keep the
-same outlines and move continuously from their previous positions.
+same outlines and move continuously from their previous positions. Separate
+landmasses move independently, with stronger attraction within a country than
+between countries in the same group. Their combined area represents one
+national value.
 Missing annual values are filled **before simulation** and shown in grey.
 Use Play, the year selector, or the slider to explore.
 See [time series](docs/time-series.md) for your own data.

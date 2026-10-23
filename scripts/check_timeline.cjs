@@ -55,6 +55,31 @@ const { chromium } = require("playwright");
       };
     });
     assert.ok(info.observations > 1);
+    const group = await page.evaluate(() => {
+      const { data, meshes } = window.__timelineTest;
+      meshes.forEach((mesh, i) => {
+        if (mesh.userData.index !== data.meshes[i].region)
+          throw new Error("Landmass hover points to the wrong region");
+      });
+      return data.regions[0].group;
+    });
+    const groupButton = page.locator("#legend").getByRole("button", {
+      name: group,
+      exact: true,
+    });
+    await groupButton.click();
+    assert.equal(
+      await page.evaluate((name) => {
+        const { data, meshes } = window.__timelineTest;
+        return meshes.every(
+          (mesh, i) =>
+            mesh.visible ===
+            (data.regions[data.meshes[i].region].group !== name),
+        );
+      }, group),
+      true,
+    );
+    await groupButton.click();
     assert.equal(await page.locator("#year option").count(), info.observations);
     await page.locator("summary").click();
     const firstValues = await page.locator("#values tr").first().innerText();
@@ -76,19 +101,22 @@ const { chromium } = require("playwright");
         let area = 0,
           height = 0;
         for (let i = 0; i < meshes.length; i++) {
+          const region = data.meshes[i].region;
           const expected =
             data.normalization === "shares"
-              ? values[i * 3] / current / (first[i][0] / baseline)
-              : values[i * 3] / first[i][0];
+              ? values[region * 3] / current / (first[region][0] / baseline)
+              : values[region * 3] / first[region][0];
           area = Math.max(
             area,
             Math.abs((meshes[i].scale.x / base[i * 4 + 2]) ** 2 / expected - 1),
           );
-          if (data.mode === "3d" && values[i * 3 + 1] > 0)
+          if (data.mode === "3d" && values[region * 3 + 1] > 0)
             height = Math.max(
               height,
               Math.abs(
-                meshes[i].scale.z / (data.heightScale * values[i * 3 + 1]) - 1,
+                meshes[i].scale.z /
+                  (data.heightScale * values[region * 3 + 1]) -
+                  1,
               ) || 0,
             );
         }
@@ -126,12 +154,13 @@ const { chromium } = require("playwright");
         let estimated = 0,
           observed = 0;
         for (let i = 0; i < meshes.length; i++) {
+          const region = data.meshes[i].region;
           const colour = meshes[i].material.color.getHexString();
-          if (estimateWeights[i] === 1) {
+          if (estimateWeights[region] === 1) {
             if (colour !== "a0a5a9") throw new Error("Estimate not grey");
             estimated++;
-          } else if (estimateWeights[i] === 0) {
-            if (colour !== data.regions[i].color.slice(1))
+          } else if (estimateWeights[region] === 0) {
+            if (colour !== data.regions[region].color.slice(1))
               throw new Error("Observed country lost group colour");
             observed++;
           }

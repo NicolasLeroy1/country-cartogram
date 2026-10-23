@@ -23,18 +23,18 @@ DEFAULTS = {
     "group_gap": 3.6,
     "anchor_pull": 0.002,
     "group_pull": 0.006,
+    "part_pull": 0.03,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settle_steps": 6000,
+    "settle_steps": 12000,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
-    "contact_iterations": 50,
+    "contact_iterations": 200,
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
     "territory_distance": 12,
     "parent_pull": 0.04,
-    "satellite_distance": 1.4,
     "min_part_fraction": 0.001,
     "max_parts": 24,
     "simplify": 0.0015,
@@ -73,7 +73,6 @@ def load_config(path=None, *, source_crs=None, projection=None):
     for key in (
         "total_area",
         "divisor",
-        "satellite_distance",
         "territory_distance",
         "position_tolerance",
         "physics_dt",
@@ -89,6 +88,7 @@ def load_config(path=None, *, source_crs=None, projection=None):
         "group_gap",
         "anchor_pull",
         "group_pull",
+        "part_pull",
         "parent_pull",
         "simplify",
         "min_part_fraction",
@@ -124,6 +124,10 @@ def load_config(path=None, *, source_crs=None, projection=None):
         raise ValueError("shape_error must be between 0 and 0.1")
     if not 0 <= config["damping"] < 1 or not 0 <= config["min_part_fraction"] < 1:
         raise ValueError("damping and min_part_fraction must be in [0, 1)")
+    if config["group_pull"] > 0 and config["part_pull"] <= config["group_pull"]:
+        raise ValueError(
+            "part_pull must exceed group_pull when group attraction is enabled"
+        )
     for color in [config["background"], config["ink"], *config["colors"].values()]:
         to_rgb(color)
     if source_crs is not None:

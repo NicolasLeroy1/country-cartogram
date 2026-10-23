@@ -24,7 +24,9 @@ class ContinuationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.config = load_config()
-        self.config.update(total_area=8, region_gap=0.1, anchor_pull=0, group_pull=0)
+        self.config.update(
+            total_area=8, region_gap=0.1, anchor_pull=0, group_pull=0, part_pull=0
+        )
         self.rows = [
             {
                 "id": c,
@@ -96,13 +98,18 @@ class ContinuationTests(unittest.TestCase):
         )
         self.assertEqual(report["method"], "continued_growth_rigid_body_physics")
         self.assertEqual(report["growth_steps"], 4)
-        np.testing.assert_array_equal(frames[0]["positions"], [[100, 100], [120, 100]])
+        np.testing.assert_allclose(
+            frames[0]["positions"], [[100.875, 99.9375], [120.875, 99.9375]]
+        )
+        np.testing.assert_allclose(
+            frames[0]["part_positions"], initial["part_positions"]
+        )
         for prior, first in zip(self.old["regions"], frames[0]["geometries"]):
             self.assertLess(
                 shape(prior["geometry"]).symmetric_difference(first).area, 1e-10
             )
         np.testing.assert_allclose([g.area for g in placed], [4.1, 3.9], atol=1e-10)
-        np.testing.assert_array_equal(positions, [[100, 100], [120, 100]])
+        np.testing.assert_allclose(positions, [[100.875, 99.9375], [120.875, 99.9375]])
         self.assertNotIn("geometries", compact_frames[0])
         np.testing.assert_allclose(compact_frames[0]["areas"], [4, 4])
         np.testing.assert_array_equal(initial["anchors"], [[0, 0], [10, 0]])
@@ -282,7 +289,8 @@ class ContinuationTests(unittest.TestCase):
             self.assertLess(audit["max_relative_area_error"], 1e-8)
         html = (root / "timeline.html").read_text()
         self.assertIn("CartogramThree", html)
-        self.assertEqual(manifest["viewer"]["geometry_count"], 3)
+        self.assertEqual(manifest["viewer"]["region_count"], 3)
+        self.assertGreater(manifest["viewer"]["geometry_count"], 3)
         self.assertGreater(
             manifest["periods"][1]["packing"]["cached_collision_part_count"], 0
         )

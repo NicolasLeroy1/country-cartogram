@@ -58,13 +58,12 @@ def prepare_region(
     min_part_fraction=0.001,
     max_parts=24,
     simplify=0.0015,
-    satellite_distance=1.4,
     shape_error=0.02,
 ):
-    """Uniformly scale retained parts; only translate satellites, never warp them.
+    """Simplify and uniformly scale landmasses; keep their source offsets.
 
-    Remote part offsets are compressed radially. Dropped tiny islands are
-    accounted for in the returned metadata, and retained area is renormalized.
+    Landmasses are positioned independently by the simulation. Dropped parts
+    are recorded, and retained area is normalized to the region quantity.
     """
     source = polygon_parts(shape(geojson))
     if not source:
@@ -88,28 +87,10 @@ def prepare_region(
     main_center = np.array(main.centroid.coords[0])
     local_parts = []
     part_info = []
-    main_radius = math.sqrt(main.area / math.pi) * factor
-    for index, part in enumerate(retained):
+    for part in retained:
         center = np.array(part.centroid.coords[0])
-        local = scale(
-            translate(part, -center[0], -center[1]), factor, factor, origin=(0, 0)
-        )
+        local = scale(translate(part, *-center), factor, factor, origin=(0, 0))
         offset = (center - main_center) * factor
-        distance = np.linalg.norm(offset)
-        if index and distance > 0:
-            direction = offset / distance
-            radius = math.sqrt(local.area / math.pi)
-            distance = min(distance, satellite_distance * (main_radius + radius))
-            # Move only along the original direction until parts are disjoint.
-            piece_gap = 0.025 * max(main_radius, 0.1)
-            for _ in range(500):
-                offset = direction * distance
-                placed = translate(local, *offset)
-                if all(placed.distance(other) >= piece_gap for other in local_parts):
-                    break
-                distance += max(piece_gap, 0.05 * (main_radius + radius))
-            else:
-                raise RuntimeError("Could not separate satellite parts")
         placed = translate(local, *offset)
         local_parts.append(placed)
         part_info.append(
@@ -120,8 +101,6 @@ def prepare_region(
             }
         )
     result = MultiPolygon(local_parts)
-    if not result.is_valid:
-        raise ValueError("Invalid region geometry after part packing")
     return (
         result,
         main_anchor,

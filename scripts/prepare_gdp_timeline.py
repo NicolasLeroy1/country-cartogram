@@ -139,6 +139,7 @@ def main():
         "decimals": 1,
         "region_gap": 0.2,
         "group_gap": 3.6,
+        "settle_steps": 6000,
         "label_regions": ["USA", "CHN", "JPN", "DEU", "IND", "BRA"],
     }
     provenance = {

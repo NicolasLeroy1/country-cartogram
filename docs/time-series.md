@@ -1,6 +1,8 @@
 # Time series
 
-Each period starts from the previous map's shapes and positions.
+Each period starts from the previous map's shapes and landmass positions.
+Disconnected parts move independently and stay together through attraction.
+They share one regional quantity and resize by the same factor.
 
 ## Input
 
@@ -149,7 +151,8 @@ This command normalizes to its own total. To preserve area per unit, set
 | `timeline.gif` | Optional annual-map slideshow |
 
 Shapes and collision hulls are reused across periods. The viewer stores one mesh
-per region and updates positions and scales during playback.
+per landmass and updates positions and scales during playback. Parts share
+regional values and estimate status.
 
 Check each period's `overlap_pairs`, `max_relative_area_error`, and
 `packing.equilibrium_converged`. Valid areas and gaps can still accompany an

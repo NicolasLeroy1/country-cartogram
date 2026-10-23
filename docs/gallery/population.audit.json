@@ -1,7 +1,7 @@
 {
-  "max_relative_area_error": 8.203437928955282e-13,
-  "minimum_region_distance": 0.21904618565205655,
-  "minimum_group_distance": 3.6195681788936516,
+  "max_relative_area_error": 1.156852391659413e-13,
+  "minimum_region_distance": 0.2190000000000083,
+  "minimum_group_distance": 3.6213316194400185,
   "overlap_pairs": [],
   "all_geometries_valid": true,
   "shape_approximation": {
@@ -20,6 +20,9 @@
     "estimated_region_ids": []
   },
   "packing": {
+    "body_count": 695,
+    "region_count": 232,
+    "part_pull": 0.03,
     "method": "growth_rigid_body_physics",
     "engine": "Pymunk/Chipmunk",
     "engine_version": "7.3.1",
@@ -27,106 +30,105 @@
     "group_fixture_count": 695,
     "cached_collision_part_count": 0,
     "collision_vertex_count": 19304,
-    "fixture_build_seconds": 0.14127445900521707,
+    "fixture_build_seconds": 0.17258514498826116,
     "collision_mode": "hull",
     "collision_tolerance": 0.12,
     "maximum_final_collision_outline_error": 15.505612959731831,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settling_iterations": 5168,
-    "equilibrium_converged": true,
-    "max_final_step_movement": 0.0019251974997297647,
+    "settling_iterations": 12000,
+    "equilibrium_converged": false,
+    "max_final_step_movement": 0.014558550887749103,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
     "initial_map_scale": 0.8642730652382962,
     "growth_trace": [
       {
         "progress": 0.007250000000000001,
-        "max_step_movement": 1.6389462149242082
+        "max_step_movement": 0.11782440420948818
       },
       {
         "progress": 0.028000000000000004,
-        "max_step_movement": 0.14533730613927417
+        "max_step_movement": 0.14774661466055933
       },
       {
         "progress": 0.06075,
-        "max_step_movement": 0.14871726140354663
+        "max_step_movement": 0.15282887212583313
       },
       {
         "progress": 0.10400000000000002,
-        "max_step_movement": 0.5714912016349499
+        "max_step_movement": 0.1506379698220151
       },
       {
         "progress": 0.15625,
-        "max_step_movement": 0.13765631183638627
+        "max_step_movement": 0.1422940661603499
       },
       {
         "progress": 0.216,
-        "max_step_movement": 0.1291009080177812
+        "max_step_movement": 0.13608003203648816
       },
       {
         "progress": 0.28174999999999994,
-        "max_step_movement": 0.09996974526237566
+        "max_step_movement": 0.11460609768470548
       },
       {
         "progress": 0.3520000000000001,
-        "max_step_movement": 0.7147260540858984
+        "max_step_movement": 0.0879147721386998
       },
       {
         "progress": 0.4252500000000001,
-        "max_step_movement": 0.07959263148685607
+        "max_step_movement": 0.0938456667781905
       },
       {
         "progress": 0.5,
-        "max_step_movement": 0.22060954248008774
+        "max_step_movement": 0.10049517174593425
       },
       {
         "progress": 0.5747500000000001,
-        "max_step_movement": 0.14073719342207863
+        "max_step_movement": 0.09736302071476467
       },
       {
         "progress": 0.648,
-        "max_step_movement": 0.2877389457963257
+        "max_step_movement": 0.10181733143553885
       },
       {
         "progress": 0.71825,
-        "max_step_movement": 0.10649323540449127
+        "max_step_movement": 0.10869478199675571
       },
       {
         "progress": 0.7839999999999999,
-        "max_step_movement": 0.10548734546108363
+        "max_step_movement": 0.13663365340252703
       },
       {
         "progress": 0.84375,
-        "max_step_movement": 0.11405676548004536
+        "max_step_movement": 0.15227183277819775
       },
       {
         "progress": 0.8960000000000001,
-        "max_step_movement": 0.4006637060739421
+        "max_step_movement": 0.18044634573628932
       },
       {
         "progress": 0.9392499999999999,
-        "max_step_movement": 0.5434893362907849
+        "max_step_movement": 0.1886630996688239
       },
       {
         "progress": 0.972,
-        "max_step_movement": 0.4779947053495275
+        "max_step_movement": 0.1667966332162025
       },
       {
         "progress": 0.99275,
-        "max_step_movement": 0.34611648448616955
+        "max_step_movement": 0.13194525144644978
       },
       {
         "progress": 1.0,
-        "max_step_movement": 0.21555733068938066
+        "max_step_movement": 0.09596300426226179
       }
     ],
-    "elapsed_seconds": 15.874292145002983,
-    "mean_displacement_from_start": 22.968592748662704,
-    "max_displacement_from_start": 236.27225362730132
+    "elapsed_seconds": 172.60884807800176,
+    "mean_displacement_from_start": 26.453488100105925,
+    "max_displacement_from_start": 241.37597569995162
   },
   "omitted_labels": [
-    "PAK",
     "PHL"
   ],
   "config": {
@@ -145,18 +147,18 @@
     "group_gap": 3.6,
     "anchor_pull": 0.002,
     "group_pull": 0.006,
+    "part_pull": 0.03,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settle_steps": 6000,
+    "settle_steps": 12000,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
-    "contact_iterations": 50,
+    "contact_iterations": 200,
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
     "territory_distance": 12,
     "parent_pull": 0.04,
-    "satellite_distance": 1.4,
     "min_part_fraction": 0.001,
     "max_parts": 24,
     "simplify": 0.0015,

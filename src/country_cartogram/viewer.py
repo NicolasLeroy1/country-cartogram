@@ -178,7 +178,7 @@ def write_static_viewer(regions, report, path, *, html_js="inline"):
     from .extrusion import extrude_roof
 
     items, transforms = [], []
-    for c in regions:
+    for i, c in enumerate(regions):
         vertices = c["vertices"].copy()
         center = (vertices[:, :2].min(axis=0) + vertices[:, :2].max(axis=0)) / 2
         vertices[:, :2] -= center
@@ -191,16 +191,16 @@ def write_static_viewer(regions, report, path, *, html_js="inline"):
             vertices, faces, roofs = extrude_roof(vertices[:, :2], c["faces"], 1.0)
         items.append(
             {
-                "id": c["id"],
-                "name": c["name"],
-                "group": c["group"],
-                "color": c["color"],
+                "region": i,
                 **mesh_payload(vertices, faces, roofs),
             }
         )
         transforms.append([*center, 1.0, c["height"]])
     payload = {
-        "regions": items,
+        "regions": [
+            {k: c[k] for k in ("id", "name", "group", "color")} for c in regions
+        ],
+        "meshes": items,
         "transforms": binary([transforms], "<f4"),
         "frameCount": 1,
         "frames": [{"year": "", "phase": "settled", "progress": 1}],
@@ -253,40 +253,52 @@ def write_timeline_viewer(
         cfg.update(
             area_label=config["value_label"], height_label="Flat map", volume_label="—"
         )
-    regions, local_bounds, base_areas = [], [], []
+    from .geometry import polygon_parts
+
+    regions, meshes, local_bounds, base_areas, owners = [], [], [], [], []
     max_volume_error = 0.0
-    for row in base["regions"]:
-        local = translate(shape(row["geometry"]), *-np.asarray(row["position"]))
-        base_areas.append(local.area)
-        local_bounds.append(local.bounds)
-        vertices, faces, roofs = extrude_polygon(local, 1.0)
-        audit = audit_mesh(vertices, faces, roofs, local, 1.0)
-        max_volume_error = max(max_volume_error, audit["mesh_relative_volume_error"])
+    for i, row in enumerate(base["regions"]):
+        geometry = shape(row["geometry"])
+        base_areas.append(geometry.area)
         regions.append(
             {
                 "id": row["id"],
                 "name": row["name"],
                 "group": row["group"],
                 "color": region_color({**row, "value_status": "observed"}, config),
-                **mesh_payload(vertices, faces, roofs),
             }
         )
+        for part in polygon_parts(geometry):
+            local = translate(part, -part.centroid.x, -part.centroid.y)
+            local_bounds.append(local.bounds)
+            owners.append(i)
+            vertices, faces, roofs = extrude_polygon(local, 1.0)
+            audit = audit_mesh(vertices, faces, roofs, local, 1.0)
+            max_volume_error = max(
+                max_volume_error, audit["mesh_relative_volume_error"]
+            )
+            meshes.append({"region": i, **mesh_payload(vertices, faces, roofs)})
+    owners = np.asarray(owners)
     limits, transforms, observations = [], [], []
     for frame in frames:
-        scales, positions = np.asarray(frame["scales"]), np.asarray(frame["positions"])
-        bounds = np.asarray(local_bounds) * scales[:, None] + np.tile(positions, (1, 2))
+        scales, positions = (
+            np.asarray(frame["scales"]),
+            np.asarray(frame["part_positions"]),
+        )
+        bounds = np.asarray(local_bounds) * scales[owners, None] + np.tile(
+            positions, (1, 2)
+        )
         limits.append([*bounds[:, :2].min(axis=0), *bounds[:, 2:].max(axis=0)])
         current = np.asarray(quantities[frame["year"]])
         previous = np.asarray(quantities.get(frame.get("from"), current))
         current = previous * (1 - frame["progress"]) + current * frame["progress"]
         a, b = current[:, 0], current[:, 1]
         if normalization == "shares":
-            # Match the solver's interpolated shares using one period total.
             areas = np.asarray(base_areas) * scales**2
             a = areas / areas.sum() * a.sum()
         ratios = b / a
         observations.append(np.column_stack((a, ratios, b)).tolist())
-        transforms.append(np.column_stack((positions, scales, ratios)))
+        transforms.append(np.column_stack((positions, scales[owners], ratios[owners])))
     limits = np.asarray(limits)
     bounds = [*limits[:, :2].min(axis=0), *limits[:, 2:].max(axis=0)]
     span = max(bounds[2] - bounds[0], bounds[3] - bounds[1])
@@ -302,10 +314,15 @@ def write_timeline_viewer(
         )
     payload = {
         "regions": regions,
+        "meshes": meshes,
         "transforms": binary(transforms, "<f4"),
         "frameCount": len(frames),
         "frames": [
-            {k: v for k, v in f.items() if k not in ("positions", "scales")}
+            {
+                k: v
+                for k, v in f.items()
+                if k not in ("positions", "part_positions", "scales")
+            }
             for f in frames
         ],
         "endpoints": endpoints,
@@ -326,16 +343,17 @@ def write_timeline_viewer(
         "renderer": "threejs",
         "threejs_version": THREE_VERSION,
         "height_scale": height_scale,
-        "geometry_count": len(regions),
+        "geometry_count": len(meshes),
+        "region_count": len(regions),
         "mesh_triangle_count": sum(
-            len(base64.b64decode(c["faces"])) // c["indexBytes"] // 3 for c in regions
+            len(base64.b64decode(c["faces"])) // c["indexBytes"] // 3 for c in meshes
         ),
         "max_unit_mesh_volume_error": max_volume_error,
-        "max_display_relative_area_error": max(c["displayAreaError"] for c in regions),
+        "max_display_relative_area_error": max(c["displayAreaError"] for c in meshes),
         "max_display_relative_volume_error": max(
-            c["displayVolumeError"] for c in regions
+            c["displayVolumeError"] for c in meshes
         ),
         "relative_error_budget": 0.02,
-        "frame_storage": "gzip + float32 transforms; one mesh per region",
+        "frame_storage": "gzip + float32 transforms; one mesh per landmass, shared regional quantities",
         "display_interpolation": "Continuous positions and areas between captured states; calendar pacing independent of solver frame count",
     }

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 from shapely.affinity import scale, translate
-from shapely.geometry import shape
+from shapely.geometry import MultiPolygon, shape
 
 from .geometry import polygon_parts
 
@@ -18,7 +18,6 @@ GEOMETRY_KEYS = (
     "min_part_fraction",
     "max_parts",
     "simplify",
-    "satellite_distance",
     "shape_error",
     "source_crs",
     "projection",
@@ -57,7 +56,14 @@ def prepare_continuation(path, rows, config, boundaries_sha256):
         or map_scale <= 0
     ):
         raise ValueError("Previous layout has an invalid geographic scale")
-    geometries, anchors, metadata, positions, initial_areas = [], [], [], [], []
+    geometries, anchors, metadata, positions, initial_areas, part_positions = (
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
     total = math.fsum(row["value"] for row in rows)
     for row in rows:
         code = row["id"]
@@ -94,10 +100,21 @@ def prepare_continuation(path, rows, config, boundaries_sha256):
         factor = math.sqrt(target / geometry.area)
         if not math.isfinite(factor) or factor <= 0:
             raise ValueError(f"{code}: invalid continuation scale")
-        final = scale(translate(geometry, *-position), factor, factor, origin=(0, 0))
+        parts = polygon_parts(geometry)
+        centers = [np.array(part.centroid.coords[0]) for part in parts]
+        final = MultiPolygon(
+            [
+                translate(
+                    scale(translate(part, *-center), factor, factor, origin=(0, 0)),
+                    *(center - position),
+                )
+                for part, center in zip(parts, centers)
+            ]
+        )
+        part_positions.append(np.asarray(centers))
         detail["scale_factor"] *= factor
-        for part in detail["parts"]:
-            part["offset"] = (np.asarray(part["offset"]) * factor).tolist()
+        for part, center in zip(detail["parts"], centers):
+            part["offset"] = (center - position).tolist()
             part["area"] *= factor * factor
         geometries.append(final)
         metadata.append(detail)
@@ -106,6 +123,7 @@ def prepare_continuation(path, rows, config, boundaries_sha256):
         anchors.append(anchor)
     initial = {
         "positions": np.asarray(positions),
+        "part_positions": np.concatenate(part_positions),
         "areas": np.asarray(initial_areas),
         "map_scale": map_scale,
         "anchors": np.asarray(anchors),

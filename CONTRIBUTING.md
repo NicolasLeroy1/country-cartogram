@@ -49,7 +49,9 @@ before timing it. Vertex reductions can change the contact path and settling
 work, so report measured timings rather than an assumed speed ratio.
 
 For continuation, check the first captured state against the previous endpoint,
-retained geographic anchors, fixed area scale, and checkpoint restarts. Cached
+retained geographic anchors, independent landmass positions, fixed area scale,
+and checkpoint restarts. Check that internal attraction is stronger than group
+attraction and that the viewer counts each region's quantity once. Cached
 hulls must match uncached results. For meshes, check concavities, holes, islands,
 zero heights, closure, and measured volumes.
 

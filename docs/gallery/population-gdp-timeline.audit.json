@@ -20,18 +20,19 @@
   "viewer": {
     "renderer": "threejs",
     "threejs_version": "0.186.1",
-    "height_scale": 0.0003245479956184426,
-    "geometry_count": 231,
+    "height_scale": 0.00031760286708427965,
+    "geometry_count": 694,
+    "region_count": 231,
     "mesh_triangle_count": 89112,
     "max_unit_mesh_volume_error": 1.5543122344752192e-15,
-    "max_display_relative_area_error": 6.641249061800636e-08,
-    "max_display_relative_volume_error": 6.641249039596175e-08,
+    "max_display_relative_area_error": 9.570176717765833e-08,
+    "max_display_relative_volume_error": 9.570176695561372e-08,
     "relative_error_budget": 0.02,
-    "frame_storage": "gzip + float32 transforms; one mesh per region",
+    "frame_storage": "gzip + float32 transforms; one mesh per landmass, shared regional quantities",
     "display_interpolation": "Continuous positions and areas between captured states; calendar pacing independent of solver frame count"
   },
   "region_count": 231,
-  "frame_count": 15,
+  "frame_count": 19,
   "period_count": 3,
   "periods": [
     {
@@ -40,6 +41,9 @@
       "area_scale": 1.3029230342656433e-06,
       "layout": "2020.layout.json",
       "packing": {
+        "body_count": 694,
+        "region_count": 231,
+        "part_pull": 0.03,
         "method": "growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
@@ -47,103 +51,103 @@
         "group_fixture_count": 694,
         "cached_collision_part_count": 0,
         "collision_vertex_count": 19286,
-        "fixture_build_seconds": 0.13597696599026676,
+        "fixture_build_seconds": 0.17742605500097852,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
         "maximum_final_collision_outline_error": 15.505613793089896,
         "growth_steps": 80,
         "relax_per_step": 20,
-        "settling_iterations": 4825,
-        "equilibrium_converged": true,
-        "max_final_step_movement": 0.001232017307545767,
+        "settling_iterations": 12000,
+        "equilibrium_converged": false,
+        "max_final_step_movement": 0.0012407508760955534,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
         "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.007250000000000001,
-            "max_step_movement": 0.1134859844322894
+            "max_step_movement": 0.11782456138374497
           },
           {
             "progress": 0.028000000000000004,
-            "max_step_movement": 0.14499721127738055
+            "max_step_movement": 0.1477466126604422
           },
           {
             "progress": 0.06075,
-            "max_step_movement": 0.1479568841494959
+            "max_step_movement": 0.15282875696911494
           },
           {
             "progress": 0.10400000000000002,
-            "max_step_movement": 0.14901219649003072
+            "max_step_movement": 0.15063394342711212
           },
           {
             "progress": 0.15625,
-            "max_step_movement": 0.1363046255845161
+            "max_step_movement": 0.14229336667242284
           },
           {
             "progress": 0.216,
-            "max_step_movement": 0.12777656238892937
+            "max_step_movement": 0.13608129011554312
           },
           {
             "progress": 0.28174999999999994,
-            "max_step_movement": 0.08006388663140569
+            "max_step_movement": 0.11460820442122704
           },
           {
             "progress": 0.3520000000000001,
-            "max_step_movement": 0.07647806137273659
+            "max_step_movement": 0.08688539588656234
           },
           {
             "progress": 0.4252500000000001,
-            "max_step_movement": 0.20957778209170896
+            "max_step_movement": 0.0941475730489305
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.18202731301019295
+            "max_step_movement": 0.1008547495941909
           },
           {
             "progress": 0.5747500000000001,
-            "max_step_movement": 0.24374351516417414
+            "max_step_movement": 0.09712663670028245
           },
           {
             "progress": 0.648,
-            "max_step_movement": 0.22034635719026827
+            "max_step_movement": 0.10155882535672228
           },
           {
             "progress": 0.71825,
-            "max_step_movement": 0.1117570743136791
+            "max_step_movement": 0.12687622692379755
           },
           {
             "progress": 0.7839999999999999,
-            "max_step_movement": 0.29340820712445925
+            "max_step_movement": 0.13929549989165968
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.4518462738709327
+            "max_step_movement": 0.1546111433767251
           },
           {
             "progress": 0.8960000000000001,
-            "max_step_movement": 0.5468544708760809
+            "max_step_movement": 0.17889554271433605
           },
           {
             "progress": 0.9392499999999999,
-            "max_step_movement": 0.8737756715675569
+            "max_step_movement": 0.18600730586002692
           },
           {
             "progress": 0.972,
-            "max_step_movement": 0.3032846295164461
+            "max_step_movement": 0.171788383579431
           },
           {
             "progress": 0.99275,
-            "max_step_movement": 0.085665290581518
+            "max_step_movement": 0.13516343169220452
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.1303824793359426
+            "max_step_movement": 0.11216826183716015
           }
         ],
-        "elapsed_seconds": 20.403145468997536,
-        "mean_displacement_from_start": 24.028144372562224,
-        "max_displacement_from_start": 253.37722156727168
+        "elapsed_seconds": 203.80963193900243,
+        "mean_displacement_from_start": 26.733671333215227,
+        "max_displacement_from_start": 251.12420209521335
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -152,9 +156,9 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 2.3070434451710753e-13,
-      "minimum_region_distance": 0.21949827609079453,
-      "minimum_group_distance": 3.6386511766632634,
+      "max_relative_area_error": 3.006483950684924e-13,
+      "minimum_region_distance": 0.21213160303622314,
+      "minimum_group_distance": 3.620174876947285,
       "overlap_pairs": [],
       "continuation": null
     },
@@ -164,6 +168,9 @@
       "area_scale": 1.3029230342656433e-06,
       "layout": "2021.layout.json",
       "packing": {
+        "body_count": 694,
+        "region_count": 231,
+        "part_pull": 0.03,
         "method": "continued_growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
@@ -171,39 +178,39 @@
         "group_fixture_count": 694,
         "cached_collision_part_count": 694,
         "collision_vertex_count": 19286,
-        "fixture_build_seconds": 0.07067907298915088,
+        "fixture_build_seconds": 0.1486451929959003,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
         "maximum_final_collision_outline_error": 15.655090678766717,
         "growth_steps": 4,
         "relax_per_step": 20,
-        "settling_iterations": 415,
+        "settling_iterations": 829,
         "equilibrium_converged": true,
-        "max_final_step_movement": 0.0016037793398905906,
+        "max_final_step_movement": 0.0014766947619117804,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
         "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.15625,
-            "max_step_movement": 0.028125112594100526
+            "max_step_movement": 0.007920805164327237
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.0561033426849973
+            "max_step_movement": 0.009540819534409377
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.00912130170995402
+            "max_step_movement": 0.012820705621451225
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.011844505478908312
+            "max_step_movement": 0.010481047332580696
           }
         ],
-        "elapsed_seconds": 1.653246539994143,
-        "mean_displacement_from_start": 0.3595635265129336,
-        "max_displacement_from_start": 1.0113608944072099
+        "elapsed_seconds": 17.055918889993336,
+        "mean_displacement_from_start": 0.38269325248793096,
+        "max_displacement_from_start": 3.1312433397431447
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -212,12 +219,12 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 5.127009927718973e-13,
-      "minimum_region_distance": 0.21905831462090156,
-      "minimum_group_distance": 3.6370113612865187,
+      "max_relative_area_error": 4.2588155224621005e-13,
+      "minimum_region_distance": 0.21897408714588742,
+      "minimum_group_distance": 3.6214835073069387,
       "overlap_pairs": [],
       "continuation": {
-        "initial_layout_sha256": "b8a9b0076d166a1104f7493b1dac855ffbd171b47862370d62d6d0f02a1b71e7",
+        "initial_layout_sha256": "bfa005a475bd376becd6605d03fa662ef7abf377a2503e8611ebc5c242181b96",
         "reused_region_count": 231
       }
     },
@@ -227,6 +234,9 @@
       "area_scale": 1.3029230342656433e-06,
       "layout": "2022.layout.json",
       "packing": {
+        "body_count": 694,
+        "region_count": 231,
+        "part_pull": 0.03,
         "method": "continued_growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
@@ -234,39 +244,39 @@
         "group_fixture_count": 694,
         "cached_collision_part_count": 694,
         "collision_vertex_count": 19286,
-        "fixture_build_seconds": 0.07169639298808761,
+        "fixture_build_seconds": 0.08598264200554695,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
-        "maximum_final_collision_outline_error": 15.80600854830998,
+        "maximum_final_collision_outline_error": 15.806008548309975,
         "growth_steps": 4,
         "relax_per_step": 20,
-        "settling_iterations": 537,
+        "settling_iterations": 820,
         "equilibrium_converged": true,
-        "max_final_step_movement": 0.0019996805407604032,
+        "max_final_step_movement": 0.0018710393374542186,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
         "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.15625,
-            "max_step_movement": 0.02646310443189619
+            "max_step_movement": 0.005865458812133649
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.010439206179789823
+            "max_step_movement": 0.010125768670404371
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.16801116142445874
+            "max_step_movement": 0.017235009122490683
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.011881031683609534
+            "max_step_movement": 0.012710459281179578
           }
         ],
-        "elapsed_seconds": 2.0079292449954664,
-        "mean_displacement_from_start": 0.39021249536977176,
-        "max_displacement_from_start": 1.1419012926452161
+        "elapsed_seconds": 9.953192043001764,
+        "mean_displacement_from_start": 0.363358552695075,
+        "max_displacement_from_start": 1.5115805092444647
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -275,17 +285,17 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 4.247713292215849e-13,
-      "minimum_region_distance": 0.2190534299127968,
-      "minimum_group_distance": 3.63447907288493,
+      "max_relative_area_error": 1.858513343222512e-13,
+      "minimum_region_distance": 0.21902177757716867,
+      "minimum_group_distance": 3.620923829208304,
       "overlap_pairs": [],
       "continuation": {
-        "initial_layout_sha256": "0337a14c791868f9b65ea942c51e508aabea1f1c0088aec2504e23795d0241d4",
+        "initial_layout_sha256": "ff5eb58c2d13ecd65cea69f53dcb653fe22fb5fced02a5714056667837372f12",
         "reused_region_count": 231
       }
     }
   ],
   "initial_layout_sha256": null,
-  "html_bytes": 1809614,
+  "html_bytes": 1879521,
   "note": "Annual endpoint maps use prepared inputs, including flagged estimates. Playback follows captured solver states between endpoints; those intermediate states are not extra observations."
 }

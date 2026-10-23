@@ -103,7 +103,6 @@ Distances use chart units. The default total land area is 10000 square units.
 | `simplify` | 0.0015 | Fixed tolerance when `shape_error` is 0; set to 0 to disable simplification |
 | `min_part_fraction` | 0.001 | Omit islands below this fraction of a region's area |
 | `max_parts` | 24 | Maximum retained parts per region |
-| `satellite_distance` | 1.4 | Limit remote island offsets, relative to part radii |
 | `territory_distance` | 12 | Preferred parent-territory distance |
 
 See [shape approximation](algorithm.md#shape-approximation) for the error measure
@@ -118,14 +117,15 @@ for the full configuration.
 | --- | ---: | --- |
 | `anchor_pull` | 0.002 | Attraction toward geographic anchors |
 | `group_pull` | 0.006 | Attraction toward each group's moving center |
+| `part_pull` | 0.03 | Attraction between landmasses of one region; must exceed `group_pull` when group attraction is enabled |
 | `parent_pull` | 0.04 | Strength of parent-territory links |
 | `damping` | 0.7 | Fraction of velocity retained per simulated second |
 | `growth_steps` | 80 | Maximum resizing stages; continuation can use fewer |
 | `relax_per_step` | 20 | Force and contact updates per stage |
-| `settle_steps` | 6000 | Maximum updates after resizing |
+| `settle_steps` | 12000 | Maximum updates after resizing |
 | `position_tolerance` | 0.002 | Movement threshold for convergence |
 | `physics_dt` | 0.04 | Simulated seconds per update |
-| `contact_iterations` | 50 | Contact solver iterations per update |
+| `contact_iterations` | 200 | Contact solver iterations per update |
 | `collision_mode` | `hull` | Conservative hulls; `decomposed` is experimental |
 | `collision_tolerance` | 0.12 | Additional simplification in `decomposed` mode |
 

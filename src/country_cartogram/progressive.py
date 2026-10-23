@@ -1,6 +1,5 @@
-"""Planar geometry interpolation used by the rigid-body growth engine."""
+"""Uniform area growth for independently positioned landmasses."""
 
-from __future__ import annotations
 import math
 import numpy as np
 import shapely
@@ -10,75 +9,58 @@ from .geometry import polygon_parts
 
 
 class GrowthShapes:
-    """Construct all intermediate geometries from immutable final outlines."""
-
-    def __init__(self, final_geometries, metadata, total_area):
+    def __init__(self, final_geometries, metadata, total_area, initial_state=None):
         self.target_areas = np.array([g.area for g in final_geometries])
         self.final_scales = np.array([m["scale_factor"] for m in metadata])
         self.source_areas = self.target_areas / self.final_scales**2
-        self.map_scale = math.sqrt(total_area / self.source_areas.sum())
-        self.initial_areas = self.source_areas * self.map_scale**2
-        self.final_geometries = final_geometries
-        self.parts = []
-        for geometry, detail in zip(final_geometries, metadata):
-            main_center = np.array(detail["parts"][0]["source_center"])
-            parts = []
-            for part, info in zip(polygon_parts(geometry), detail["parts"]):
-                final_offset = np.array(info["offset"])
-                parts.append(
-                    (
-                        translate(part, *-final_offset),
-                        np.array(info["source_center"]) - main_center,
-                        final_offset,
-                    )
+        self.map_scale = (
+            initial_state["map_scale"]
+            if initial_state
+            else math.sqrt(total_area / self.source_areas.sum())
+        )
+        self.initial_areas = (
+            np.asarray(initial_state["areas"])
+            if initial_state
+            else self.source_areas * self.map_scale**2
+        )
+        self.parts, self.owners, self.indices, self.offsets = [], [], [], []
+        for i, (geometry, detail) in enumerate(zip(final_geometries, metadata)):
+            main = np.asarray(detail["parts"][0]["source_center"])
+            for j, (part, info) in enumerate(
+                zip(polygon_parts(geometry), detail["parts"])
+            ):
+                self.parts.append(translate(part, *-np.asarray(info["offset"])))
+                self.owners.append(i)
+                self.indices.append(j)
+                self.offsets.append(
+                    (np.asarray(info["source_center"]) - main) * self.map_scale
                 )
-            self.parts.append(parts)
+        self.owners = np.asarray(self.owners)
+        self.offsets = np.asarray(self.offsets)
+        self.part_areas = np.array([part.area for part in self.parts])
 
-    @classmethod
-    def from_previous(cls, final_geometries, metadata, initial_areas, map_scale):
-        """Continue from compacted shapes; never unfold islands back to geography."""
-        obj = cls.__new__(cls)
-        obj.final_geometries = final_geometries
-        obj.target_areas = np.array([g.area for g in final_geometries])
-        obj.initial_areas = np.asarray(initial_areas, dtype=float)
-        obj.final_scales = np.array([m["scale_factor"] for m in metadata])
-        obj.source_areas = obj.target_areas / obj.final_scales**2
-        obj.map_scale = map_scale
-        obj.parts = []
-        for geometry, detail, factor in zip(
-            final_geometries, metadata, obj.final_scales
-        ):
-            parts = []
-            for part, info in zip(polygon_parts(geometry), detail["parts"]):
-                offset = np.asarray(info["offset"])
-                # Both endpoints have the same normalized inset arrangement.
-                parts.append((translate(part, *-offset), offset / factor, offset))
-            obj.parts.append(parts)
-        return obj
+    def factors(self, progress):
+        return np.sqrt(
+            ((1 - progress) * self.initial_areas + progress * self.target_areas)
+            / self.target_areas
+        )
 
-    def at(self, progress):
-        if progress >= 1:
-            return list(self.final_geometries)
-        current_areas = (
-            1 - progress
-        ) * self.initial_areas + progress * self.target_areas
-        factors = np.sqrt(current_areas / self.target_areas)
-        geometries = []
-        for i, parts in enumerate(self.parts):
-            factor = factors[i]
-            pieces = []
-            for outline, source_offset, final_offset in parts:
-                offset = (
-                    (1 - progress) * source_offset * self.final_scales[i]
-                    + progress * final_offset
-                ) * factor
-                pieces.append(
-                    translate(scale(outline, factor, factor, origin=(0, 0)), *offset)
+    def at(self, progress, part_positions):
+        factors = self.factors(progress)
+        parts = [[] for _ in self.target_areas]
+        for outline, owner, position in zip(self.parts, self.owners, part_positions):
+            parts[owner].append(
+                translate(
+                    scale(outline, factors[owner], factors[owner], origin=(0, 0)),
+                    *position,
                 )
-            # Components can cross during their gradual inset movement. Union
-            # is used only for rendering those intermediate states.
-            geometry = MultiPolygon(pieces)
-            geometries.append(
-                geometry if geometry.is_valid else shapely.union_all(pieces)
             )
-        return geometries
+        result = []
+        for pieces in parts:
+            geometry = MultiPolygon(pieces)
+            result.append(
+                geometry
+                if geometry.is_valid or progress == 1
+                else shapely.union_all(pieces)
+            )
+        return result

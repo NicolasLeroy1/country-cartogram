@@ -17,7 +17,7 @@ from shapely.geometry import mapping
 import matplotlib
 
 from .rendering import render
-from .geometry import prepare_region
+from .geometry import prepare_region, polygon_parts
 from .maps import DEFAULT_BOUNDARIES, load_map, add_map_arguments
 from .values import read_values
 from .physics import layout_physics
@@ -37,6 +37,13 @@ def audit(geometries, rows, config):
     for i, a in enumerate(geometries):
         if not a.is_valid:
             raise RuntimeError(f"Invalid output geometry: {rows[i]['id']}")
+        parts = polygon_parts(a)
+        for k, part in enumerate(parts):
+            for other in parts[:k]:
+                if part.distance(other) < config["region_gap"] - 1e-5:
+                    raise RuntimeError(
+                        f"Landmasses overlap or have insufficient gap: {rows[i]['id']}"
+                    )
         for j in range(i):
             distance = a.distance(geometries[j])
             minimum = min(minimum, distance)
@@ -143,7 +150,6 @@ def run(
                         "min_part_fraction",
                         "max_parts",
                         "simplify",
-                        "satellite_distance",
                         "shape_error",
                     ]
                 },
@@ -184,6 +190,10 @@ def run(
             m.get("max_shape_relative_error", 0) for m in metadata
         ),
     }
+    for geometry, position, detail in zip(placed, positions, metadata):
+        for part, info in zip(polygon_parts(geometry), detail["parts"]):
+            info["offset"] = (np.asarray(part.centroid.coords[0]) - position).tolist()
+            info["area"] = part.area
     stem = Path(output)
     stem.parent.mkdir(parents=True, exist_ok=True)
     omitted_labels = (
@@ -257,7 +267,7 @@ def run(
                 }
             )
     layout = {
-        "schema_version": 3,
+        "schema_version": 4,
         "coordinate_system": diagnostics["coordinate_system"],
         "regions": [
             {

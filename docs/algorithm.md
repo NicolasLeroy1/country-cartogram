@@ -2,8 +2,9 @@
 
 ## The model
 
-Each region is a translating rigid body with one or more retained polygon parts.
-Rotation is locked. The final rendered area is proportional to its input value.
+Each retained landmass is a translating rigid body. Rotation is locked. Parts of
+a region share one resizing factor, so their combined final area is proportional
+to the region's input value.
 All regions share one simulation. Group attraction and contacts determine
 their positions; continents can move relative to one another.
 
@@ -14,7 +15,7 @@ the initial map to the configured total area.
 
 ## Shape approximation
 
-Before island placement or simulation, each retained projected polygon is
+Before simulation, each retained projected polygon is
 simplified within the `shape_error` budget (default 0.02). A candidate's area
 and centroid are restored before testing
 
@@ -24,7 +25,7 @@ The adaptive search keeps the coarsest tested candidate within the budget,
 preserving holes.
 The same prepared shapes feed collision construction, all growth stages,
 rendering, and continuation. The budget applies after island selection; dropped
-parts and intentional inset movement are recorded separately.
+parts are recorded separately.
 
 `shape_error: 0` uses the fixed `simplify` tolerance. `simplify: 0` disables both
 methods. Final area normalization still preserves the supplied quantities.
@@ -46,14 +47,19 @@ remain active at every growth stage.
 
 ## Attraction and contacts
 
-Bodies have mass proportional to final target area. For group $C$, its moving
+Bodies have mass proportional to their final target area. Regional positions
+are the area-weighted centers of their landmasses. For group $C$, its moving
 center is
 
 $$c_C=\frac{\sum_{i\in C}m_i x_i}{\sum_{i\in C}m_i}.$$
 
 The unconstrained acceleration includes
 
-$$a_i=k_g(g_i-x_i)+k_c(c_C-x_i).$$
+$$a_p=k_g(g_i-x_i)+k_c(c_C-x_i)+k_p(x_i-x_p).$$
+
+Here landmass $p$ belongs to region $i$. The default internal attraction
+$k_p=0.03$ is five times the group attraction $k_c=0.006$. Parts can separate
+around other regions while remaining more closely bound to their own region.
 
 Here $g_i$ denotes the geographic position anchor. Parent
 links add equal-and-opposite forces with a gradually compacted preferred offset.
@@ -64,8 +70,8 @@ groups can still move a group's barycenter.
 Pymunk/Chipmunk resolves short-range contacts. The default uses one convex hull
 per retained land component, expanded by a square of half the requested gap
 plus a numerical margin. This conservative envelope avoids unreliable rounded
-contacts on tiny islands. All components of a region share one body and do not
-collide with one another. The hulls contain the finer displayed polygons, making
+contacts on tiny islands. Parts of the same region also collide and respect
+`region_gap`. The hulls contain the finer displayed polygons, making
 the approximation conservative. A second contact skin uses `group_gap` and
 only collides with regions from other groups. The default gaps are 0.2 within
 groups and 3.6 between groups. Repulsion is local, so distant groups are not
@@ -75,12 +81,13 @@ These are minimum gaps; conservative envelopes can leave more space at corners.
 ## Remote islands and territories
 
 Multipart regions begin with the retained components at their geographic
-offsets. As growth progresses, remote offsets compact radially toward the main
-part. The projected direction is retained, and final parts are kept disjoint.
+offsets. Attraction compacts them while contacts with other landmasses determine
+their individual positions. Continuation starts each part at its previous
+position; separation does not scale with the national quantity.
 Separate CSV records can use a `parent` code; these records retain independent
 quantities and receive a parent-relative spring.
 
-Intermediate components can cross while moving toward their insets. Therefore,
+Intermediate components can overlap during resizing. Therefore,
 the strict area and separation guarantees apply to the audited final output,
 not every intermediate animation frame. Parent-link directions are approximate
 in the chosen projection; a map seam can also affect distant territory placement.

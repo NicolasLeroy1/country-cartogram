@@ -20,7 +20,8 @@
       .pipeThrough(new DecompressionStream("gzip"));
     const data = JSON.parse(await new Response(stream).text());
     const transforms = new Float32Array(bytes(data.transforms).buffer),
-      count = data.regions.length;
+      count = data.regions.length,
+      meshCount = data.meshes.length;
     const viewport = $("viewport"),
       scene = new THREE.Scene();
     scene.background = new THREE.Color("#f7f8f5");
@@ -141,14 +142,15 @@
       hovered = null,
       pointer = null,
       hoverRequest = null;
-    for (let i = 0; i < count; i++) {
-      const c = data.regions[i],
-        vertices = new Float32Array(bytes(c.vertices).buffer),
-        Index = c.indexBytes === 2 ? Uint16Array : Uint32Array;
+    for (let i = 0; i < meshCount; i++) {
+      const g = data.meshes[i],
+        c = data.regions[g.region],
+        vertices = new Float32Array(bytes(g.vertices).buffer),
+        Index = g.indexBytes === 2 ? Uint16Array : Uint32Array;
       const solid = new THREE.BufferGeometry();
       solid.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
       solid.setIndex(
-        new THREE.BufferAttribute(new Index(bytes(c.faces).buffer), 1),
+        new THREE.BufferAttribute(new Index(bytes(g.faces).buffer), 1),
       );
       solid.computeVertexNormals();
       solid.computeBoundingSphere();
@@ -157,7 +159,7 @@
       for (let k = 2; k < flatVertices.length; k += 3) flatVertices[k] = 0;
       flat.setAttribute("position", new THREE.BufferAttribute(flatVertices, 3));
       flat.setIndex(
-        new THREE.BufferAttribute(new Index(bytes(c.roofs).buffer), 1),
+        new THREE.BufferAttribute(new Index(bytes(g.roofs).buffer), 1),
       );
       flat.computeVertexNormals();
       flat.computeBoundingSphere();
@@ -248,7 +250,7 @@
       flatMaterials.push(flatMaterial);
       translucentMaterials.push(material);
       const mesh = new THREE.Mesh(solid, material);
-      mesh.userData.index = i;
+      mesh.userData.index = g.region;
       mesh.matrixAutoUpdate = false;
       scene.add(mesh);
       meshes.push(mesh);
@@ -557,25 +559,14 @@
         total = lerp(totals[index], totals[next]);
       currentTotal = 0;
       for (let j = 0; j < count; j++) {
-        const offset = (index * count + j) * 4,
-          nextOffset = (next * count + j) * 4,
-          left = data.observations[index][j],
+        const left = data.observations[index][j],
           right = data.observations[next][j],
           a =
             data.normalization === "shares"
               ? lerp(left[0] / totals[index], right[0] / totals[next]) * total
               : lerp(left[0], right[0]),
           b = lerp(left[2], right[2]),
-          ratio = b / a,
-          x = lerp(transforms[offset], transforms[nextOffset]),
-          y = lerp(transforms[offset + 1], transforms[nextOffset + 1]),
-          // Interpolate areas, not widths, to preserve the quantity encoding.
-          s = Math.sqrt(
-            lerp(transforms[offset + 2] ** 2, transforms[nextOffset + 2] ** 2),
-          ),
-          h = ratio * data.heightScale,
-          mesh = meshes[j],
-          flat = top || h === 0 || data.mode === "2d";
+          ratio = b / a;
         values[j * 3] = a;
         values[j * 3 + 1] = ratio;
         values[j * 3 + 2] = b;
@@ -607,13 +598,26 @@
         valueStatuses[j] =
           estimate > 1e-8 ? statusAt(sourceYear, j) : "observed";
         valueNotes[j] = data.valueNotes?.[String(sourceYear)]?.[j] || "";
-        flatMaterials[j].color
-          .copy(baseColors[j])
-          .lerp(estimatedColor, estimate);
-        translucentMaterials[j].color.copy(flatMaterials[j].color);
         currentTotal += a;
-        mesh.geometry = flat ? flats[j] : solids[j];
-        mesh.material = flat ? flatMaterials[j] : translucentMaterials[j];
+      }
+      for (let k = 0; k < meshCount; k++) {
+        const j = data.meshes[k].region,
+          offset = (index * meshCount + k) * 4,
+          nextOffset = (next * meshCount + k) * 4,
+          x = lerp(transforms[offset], transforms[nextOffset]),
+          y = lerp(transforms[offset + 1], transforms[nextOffset + 1]),
+          s = Math.sqrt(
+            lerp(transforms[offset + 2] ** 2, transforms[nextOffset + 2] ** 2),
+          ),
+          h = values[j * 3 + 1] * data.heightScale,
+          mesh = meshes[k],
+          flat = top || h === 0 || data.mode === "2d";
+        flatMaterials[k].color
+          .copy(baseColors[j])
+          .lerp(estimatedColor, estimateWeights[j]);
+        translucentMaterials[k].color.copy(flatMaterials[k].color);
+        mesh.geometry = flat ? flats[k] : solids[k];
+        mesh.material = flat ? flatMaterials[k] : translucentMaterials[k];
         mesh.position.set(x - cx, y - cy, 0);
         mesh.scale.set(s, s, flat ? 1 : h);
         mesh.layers.set(flat ? 0 : 1);
@@ -743,8 +747,9 @@
       button.onclick = () => {
         group.visible = !group.visible;
         button.setAttribute("aria-pressed", String(group.visible));
-        meshes.forEach((m, i) => {
-          if (data.regions[i].group === name) m.visible = group.visible;
+        meshes.forEach((m) => {
+          if (data.regions[m.userData.index].group === name)
+            m.visible = group.visible;
         });
         hideTooltip();
         invalidate();
@@ -753,8 +758,8 @@
     }
     $("search").oninput = () => {
       const query = $("search").value.toLocaleLowerCase();
-      meshes.forEach((m, i) => {
-        const c = data.regions[i],
+      meshes.forEach((m) => {
+        const c = data.regions[m.userData.index],
           match = (c.name + " " + c.id).toLocaleLowerCase().includes(query);
         m.material.emissive.set(query && match ? 0x23443d : 0x000000);
       });
@@ -823,7 +828,8 @@
       },
       observationCount: marks.length,
       frameCount: data.frameCount,
-      meshCount: count,
+      meshCount,
+      regionCount: count,
       get triangles() {
         return renderedTriangles;
       },

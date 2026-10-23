@@ -25,7 +25,7 @@ def decode(path):
     data = json.loads(gzip.decompress(base64.b64decode(encoded)))
     transforms = np.frombuffer(
         base64.b64decode(data["transforms"]), dtype="<f4"
-    ).reshape(data["frameCount"], len(data["regions"]), 4)
+    ).reshape(data["frameCount"], len(data["meshes"]), 4)
     return data, transforms
 
 
@@ -115,7 +115,7 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(data["valueStatuses"][""], ["observed", "estimated"])
             self.assertEqual(data["valueNotes"][""][1], "Held from the previous year")
             self.assertIn('<th scope="col">Value status</th>', path.read_text())
-            for c in data["regions"]:
+            for c in data["meshes"]:
                 v = np.frombuffer(base64.b64decode(c["vertices"]), dtype="<f4").reshape(
                     -1, 3
                 )
@@ -143,6 +143,7 @@ class ViewerTests(unittest.TestCase):
                 "phase": phase,
                 "progress": p,
                 "positions": [[0, 0], [5, 0]],
+                "part_positions": [[0, 0], [5, 0]],
                 "scales": scales,
             }
             for y, p, phase, scales in [
@@ -225,7 +226,8 @@ class ViewerTests(unittest.TestCase):
                     initial_layout=first / "2021.layout.json",
                     initial_values=first / "inputs/2021.csv",
                 )
-            self.assertEqual(report["viewer"]["geometry_count"], 1)
+            self.assertEqual(report["viewer"]["region_count"], 1)
+            self.assertGreater(report["viewer"]["geometry_count"], 1)
             data, transforms = decode(root / "continued/timeline.html")
             np.testing.assert_allclose(data["observations"][0], [[1.1, 5 / 1.1, 5]])
             np.testing.assert_allclose(data["observations"][-1], [[1.2, 5.0, 6.0]])

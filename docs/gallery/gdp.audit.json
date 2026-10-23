@@ -1,7 +1,7 @@
 {
   "max_relative_area_error": 7.72715225139109e-14,
-  "minimum_region_distance": 0.21904626248610756,
-  "minimum_group_distance": 3.6293117439245837,
+  "minimum_region_distance": 0.2190000279351092,
+  "minimum_group_distance": 3.620391357573065,
   "overlap_pairs": [],
   "all_geometries_valid": true,
   "shape_approximation": {
@@ -22,6 +22,9 @@
     "estimated_region_ids": []
   },
   "packing": {
+    "body_count": 693,
+    "region_count": 230,
+    "part_pull": 0.03,
     "method": "growth_rigid_body_physics",
     "engine": "Pymunk/Chipmunk",
     "engine_version": "7.3.1",
@@ -29,105 +32,107 @@
     "group_fixture_count": 693,
     "cached_collision_part_count": 0,
     "collision_vertex_count": 19262,
-    "fixture_build_seconds": 0.2696846769977128,
+    "fixture_build_seconds": 0.3797440500056837,
     "collision_mode": "hull",
     "collision_tolerance": 0.12,
     "maximum_final_collision_outline_error": 14.644911604846255,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settling_iterations": 4382,
+    "settling_iterations": 8717,
     "equilibrium_converged": true,
-    "max_final_step_movement": 0.001994688721957878,
+    "max_final_step_movement": 0.0019471611513490244,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
     "initial_map_scale": 0.8642731920913336,
     "growth_trace": [
       {
         "progress": 0.007250000000000001,
-        "max_step_movement": 0.11255061018932327
+        "max_step_movement": 0.11424867115258384
       },
       {
         "progress": 0.028000000000000004,
-        "max_step_movement": 0.1437501333498363
+        "max_step_movement": 0.2639241785560414
       },
       {
         "progress": 0.06075,
-        "max_step_movement": 0.14669642634881636
+        "max_step_movement": 0.1517593360288978
       },
       {
         "progress": 0.10400000000000002,
-        "max_step_movement": 1.568955728089225
+        "max_step_movement": 0.15841596879756747
       },
       {
         "progress": 0.15625,
-        "max_step_movement": 0.3337111482557944
+        "max_step_movement": 0.14195773229587677
       },
       {
         "progress": 0.216,
-        "max_step_movement": 0.1257354781191387
+        "max_step_movement": 0.12862869931015627
       },
       {
         "progress": 0.28174999999999994,
-        "max_step_movement": 0.12244493373676167
+        "max_step_movement": 0.12050287762201124
       },
       {
         "progress": 0.3520000000000001,
-        "max_step_movement": 0.10869844794377553
+        "max_step_movement": 0.10720360877506106
       },
       {
         "progress": 0.4252500000000001,
-        "max_step_movement": 0.1253979030289672
+        "max_step_movement": 0.11332986234893196
       },
       {
         "progress": 0.5,
-        "max_step_movement": 0.09817931076206472
+        "max_step_movement": 0.15053843739586106
       },
       {
         "progress": 0.5747500000000001,
-        "max_step_movement": 0.9288671069169742
+        "max_step_movement": 0.1467096003040185
       },
       {
         "progress": 0.648,
-        "max_step_movement": 0.17522699790543972
+        "max_step_movement": 0.09219595051484644
       },
       {
         "progress": 0.71825,
-        "max_step_movement": 0.19469236226818873
+        "max_step_movement": 0.09181891949782107
       },
       {
         "progress": 0.7839999999999999,
-        "max_step_movement": 0.20618496593665858
+        "max_step_movement": 0.09460895133247989
       },
       {
         "progress": 0.84375,
-        "max_step_movement": 2.148198395045087
+        "max_step_movement": 0.10349072949907823
       },
       {
         "progress": 0.8960000000000001,
-        "max_step_movement": 0.09004923908147158
+        "max_step_movement": 0.11454236628910203
       },
       {
         "progress": 0.9392499999999999,
-        "max_step_movement": 0.11594808702605731
+        "max_step_movement": 0.28559905574728633
       },
       {
         "progress": 0.972,
-        "max_step_movement": 0.42879130562286116
+        "max_step_movement": 0.3961135443337153
       },
       {
         "progress": 0.99275,
-        "max_step_movement": 0.597048047296784
+        "max_step_movement": 0.1060675419195782
       },
       {
         "progress": 1.0,
-        "max_step_movement": 0.49529662939855595
+        "max_step_movement": 0.2550968863675484
       }
     ],
-    "elapsed_seconds": 20.846720475994516,
-    "mean_displacement_from_start": 23.00160933549396,
-    "max_displacement_from_start": 235.72508427121792
+    "elapsed_seconds": 207.9798145990062,
+    "mean_displacement_from_start": 21.887250986517305,
+    "max_displacement_from_start": 239.36018875645024
   },
-  "omitted_labels": [],
+  "omitted_labels": [
+    "GBR"
+  ],
   "config": {
     "title": "GDP by country",
     "source_crs": "EPSG:4326",
@@ -144,18 +149,18 @@
     "group_gap": 3.6,
     "anchor_pull": 0.002,
     "group_pull": 0.006,
+    "part_pull": 0.03,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settle_steps": 6000,
+    "settle_steps": 12000,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
-    "contact_iterations": 50,
+    "contact_iterations": 200,
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
     "territory_distance": 12,
     "parent_pull": 0.04,
-    "satellite_distance": 1.4,
     "min_part_fraction": 0.001,
     "max_parts": 24,
     "simplify": 0.0015,
