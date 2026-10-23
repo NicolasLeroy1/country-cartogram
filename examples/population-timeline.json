@@ -1,7 +1,7 @@
 {
-  "title": "Population through three simulated years",
-  "subtitle": "Synthetic scenario | Constant area per person across periods",
-  "source_note": "Synthetic 2020\u20132022 scenario from historical Natural Earth population attributes; illustrative growth rates, not observed history.",
+  "title": "Population: synthetic 2020\u20132022",
+  "subtitle": "Fixed area per person",
+  "source_note": "Synthetic growth applied to historical Natural Earth population; not observed time-series data.",
   "divisor": 1000000,
   "suffix": "M",
   "decimals": 0,

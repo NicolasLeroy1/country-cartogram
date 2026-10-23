@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>@@TITLE@@</title>
+    @@STYLES@@
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Country Cartogram</div>
+      <h1>@@TITLE@@</h1>
+      <section class="encoding" aria-label="Visual encoding">@@CARDS@@</section>
+      <div class="card">
+        <div class="toolbar">
+          <output id="stamp" aria-live="polite"></output
+          ><button id="previous" aria-label="Previous period">←</button
+          ><button id="play">Play</button
+          ><button id="next" aria-label="Next period">→</button>
+          <label id="year-label"
+            >Year
+            <select id="year" aria-label="Observation year"></select
+          ></label>
+          <label id="speed-label"
+            >Speed
+            <select id="speed" aria-label="Playback speed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+            </select></label
+          >
+          <button id="view3d" aria-pressed="true">3D view</button
+          ><button id="top" aria-pressed="false">Top view</button
+          ><button id="reset">Reset</button
+          ><button id="save">Save image</button>
+          <label id="opacity-label"
+            >Opacity
+            <input
+              id="opacity"
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              aria-label="Country opacity"
+            /><output id="opacity-value">40%</output></label
+          >
+          <input
+            id="search"
+            type="search"
+            placeholder="Find country…"
+            aria-label="Find country"
+          />
+        </div>
+        <div class="viewport" id="viewport">
+          <div id="notice" role="status">Preparing map…</div>
+          <div id="tooltip" role="status"></div>
+        </div>
+        <div class="timeline" id="timeline">
+          <input
+            id="scrub"
+            type="range"
+            min="0"
+            value="0"
+            step="0.001"
+            list="year-ticks"
+            aria-label="Timeline year"
+          />
+          <datalist id="year-ticks"></datalist>
+          <div class="timeline-range">
+            <span id="range-start"></span><span id="range-end"></span>
+          </div>
+        </div>
+        <div id="legend" class="legend" aria-label="Country groups"></div>
+        <p id="estimate-key" class="hint" hidden>
+          Grey = estimated value · hover for the method.
+        </p>
+      </div>
+      <p class="hint">
+        <span id="controls-help">Scroll to zoom · hover for values.</span>
+        <span id="scale"></span>
+      </p>
+      <p class="hint" id="explanation"></p>
+      <p class="hint" id="height-note" hidden>
+        Experimental 3D: height shows second ÷ first. Small footprints with
+        large ratios can form tall, thin columns that are hard to compare. Use
+        Top view for areas and Country values for the quantities.
+      </p>
+      <details>
+        <summary>Country values <span id="table-period"></span></summary>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Country</th>
+                <th scope="col">Code</th>
+                @@HEADINGS@@
+              </tr>
+            </thead>
+            <tbody id="values">
+              @@ROWS@@
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <footer>
+        @@SOURCE@@<br />Simplified boundaries; values come from the input data.
+      </footer>
+      <noscript
+        >Enable JavaScript for the interactive map. Country values remain
+        available in the table.</noscript
+      >
+    </main>
+    <script type="application/octet-stream" id="scene-data">
+      @@DATA@@
+    </script>
+    @@SCRIPTS@@
+  </body>
+</html>

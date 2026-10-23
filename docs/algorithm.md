@@ -12,6 +12,22 @@ for country components across the date line, drops sufficiently tiny components,
 and simplifies the coastlines. The retained area fraction is recorded. A common
 scale normalizes the initial geographic map to the configured total area.
 
+## Shape approximation
+
+Before island placement or simulation, each retained projected polygon is
+simplified within the `shape_error` budget (default 0.02). A candidate's area
+and centroid are restored before testing
+
+$$\frac{\operatorname{area}(P \mathbin{\triangle} P')}{\operatorname{area}(P)} \leq \text{shape_error}.$$
+
+The adaptive search keeps the coarsest accepted candidate, preserving holes.
+The same prepared shapes feed collision construction, all growth stages,
+rendering, and continuation. The budget applies after island selection; dropped
+parts and intentional inset movement are recorded separately.
+
+`shape_error: 0` uses the fixed `simplify` tolerance. `simplify: 0` disables both
+methods. Final area normalization still preserves the supplied quantities.
+
 ## Grow and shrink gradually
 
 For positive quantities $q_i$, the final target area is
@@ -45,10 +61,15 @@ forces sum to zero internally; geographic springs and contacts with other
 clusters can still move a cluster's barycenter.
 
 Pymunk/Chipmunk resolves short-range contacts. The default uses one convex hull
-per retained land component, with a contact radius of half the requested gap
-plus a numerical margin. All components of a country share one body and do not
+per retained land component, expanded by a square of half the requested gap
+plus a numerical margin. This conservative envelope avoids unreliable rounded
+contacts on tiny islands. All components of a country share one body and do not
 collide with one another. The hulls contain the finer displayed polygons, making
-the approximation conservative. No hull is constructed around a whole cluster.
+the approximation conservative. A second contact skin uses `cluster_gap` and
+only collides with countries from other groups. The default gaps are 0.2 within
+groups and 3.6 between groups. Repulsion is local, so distant groups are not
+pushed apart continually. No hull is constructed around a whole cluster.
+These are minimum gaps; conservative envelopes can leave more space at corners.
 
 ## Remote islands and territories
 
@@ -75,42 +96,12 @@ engine. It checks validity, all pairwise overlaps and minimum distances, and
 each country's area against its normalized input. Invalid geometry, overlaps,
 area error, or an insufficient gap aborts export.
 
-## What proved useful
-
-| Choice | Why it matters |
-| --- | --- |
-| Geographic initialization and gradual resizing | Provides continuity from a recognizable world map |
-| Cluster attraction active throughout growth | Groups countries while their sizes and contacts change |
-| Coarse contact shapes, finer export geometry | Cuts collision work while preserving recognizable outlines |
-| Small time step | Reduced persistent contact jitter in dense regions |
-| Conservative component hulls | Let enclaves escape when the resized surrounding hole becomes too small |
-| Independent final audit | Detects contact errors the physics engine might otherwise hide |
-| Explicit diagnostics | Distinguishes reaching a tolerance from exhausting the iteration budget |
-
-The default GDP run uses 693 convex collision pieces for 230 countries and
-territories. A more detailed partition used roughly 24,000 pieces during
-development. This comparison concerns geometry complexity, not a controlled
-runtime benchmark.
-
-`collision_mode: "decomposed"` retains concavities and holes using simplified
-polygon partitions. It can make tighter layouts but may trap enclaves and
-failed the GDP audit during development. It remains an experimental option.
-The earlier two-stage continental packer is available as `layout_mode: "legacy"`
-for comparison; it is not the default.
-
-## Possible extensions
-
-- Bounded affine or elastic deformation with an area constraint and shape penalty.
-- Adaptive growth increments when a contact region becomes congested.
-- Neighbor springs to make loss of geographic adjacency more expensive.
-- A projection-aware treatment of parent links across the map seam.
-- A spatial index for the final audit when scaling beyond country-sized datasets.
-
-These are directions for further work, not claims about current functionality.
+`collision_mode: "decomposed"` partitions simplified concave polygons into
+convex pieces. It can fit coastlines more closely but is slower and may trap
+enclaves. `layout_mode: "legacy"` retains the earlier two-stage packer.
 
 ## References
 
 - [Pymunk API](https://www.pymunk.org/en/latest/pymunk.html)
 - [Shapely documentation](https://shapely.readthedocs.io/en/stable/manual.html)
 - [Natural Earth Admin 0 countries](https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/)
-- [Python packaging guide](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)

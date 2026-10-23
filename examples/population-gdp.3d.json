@@ -1,8 +1,8 @@
 {
-  "title": "Population beneath the world economy",
   "area_label": "Population (people)",
-  "volume_label": "GDP (USD)",
   "height_label": "GDP per person (USD)",
-  "source_note": "Demo: Natural Earth POP_EST and GDP_MD; mixed historical years, mostly 2019. Missing GDP excluded; not current statistics.",
-  "height_scale": null
+  "volume_label": "GDP (USD)",
+  "height_scale": null,
+  "title": "Population and GDP",
+  "source_note": "Natural Earth historical population and GDP; mixed years. Missing GDP excluded."
 }

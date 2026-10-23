@@ -3,4 +3,8 @@
 *.csv -text whitespace=cr-at-eol
 *.png binary
 *.gif binary
+*.gz binary
 *.pdf binary
+# Generated viewers embed upstream GLSL strings whose whitespace is intentional.
+docs/gallery/*.html linguist-generated -whitespace
+src/country_cartogram/web/three.min.js linguist-vendored -whitespace

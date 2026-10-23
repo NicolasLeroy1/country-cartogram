@@ -1,98 +1,220 @@
-"""Regenerate templates and historical examples from the bundled source fields."""
-import csv, hashlib, json
+"""Regenerate example inputs and configurations from the bundled geography."""
+
+import csv
+import hashlib
+import json
 from pathlib import Path
-from country_cartogram.pipeline import ROOT as PACKAGE_ROOT, load_catalog, DEFAULTS
+
+from country_cartogram.configuration import DEFAULTS
+from country_cartogram.pipeline import ROOT as PACKAGE_ROOT, load_catalog
+
 ROOT = Path(__file__).resolve().parents[1]
+EXAMPLES = ROOT / "examples"
 DATA = PACKAGE_ROOT / "data"
-catalog=load_catalog(DATA/'countries.geojson')
-fields=['country_code','value','name','cluster','parent','year']
-for kind,field,year in [('gdp','GDP_MD','GDP_YEAR'),('population','POP_EST','POP_YEAR')]:
-    included={code for code,r in catalog.items() if r['properties'][field]>0}
-    with (ROOT/f'examples/{kind}.csv').open('w',newline='') as f:
-        w=csv.DictWriter(f,fieldnames=fields);w.writeheader()
-        for code,r in sorted(catalog.items()):
-            if code not in included:continue
-            parent=r['parent'] if r['parent'] in included else ''
-            w.writerow({'country_code':code,'value':r['properties'][field], 'name':r['name'],
-                        'cluster':catalog[parent]['cluster'] if parent else r['cluster'],
-                        'parent':parent,'year':r['properties'][year]})
-with (DATA/'country_catalog.csv').open('w',newline='') as f:
-    w=csv.DictWriter(f,fieldnames=['country_code','name','cluster','parent']);w.writeheader()
-    for r in sorted(catalog.values(),key=lambda r:r['country_code']):
-        w.writerow({k:r[k] for k in w.fieldnames})
-with (ROOT/'examples/your_values.csv').open('w',newline='') as f:
-    w=csv.DictWriter(f,fieldnames=['country_code','value','name','cluster','parent']);w.writeheader()
-    for r in sorted(catalog.values(),key=lambda r:r['country_code']):
-        parent=r['parent']
-        w.writerow({'country_code':r['country_code'],'value':'','name':r['name'],
-                    'cluster':catalog[parent]['cluster'] if parent else r['cluster'],'parent':parent})
-configs={
-'gdp':{'title':'The world economy by size','subtitle':'Countries resized by nominal GDP | Historical demonstration dataset',
-       'source_note':'Demo only: Natural Earth GDP_MD attributes, mixed years (mostly 2019); not current GDP. USD millions in input.',
-       'prefix':'$','divisor':1000000,'suffix':'T','decimals':1,'label_countries':['AUS','BRA','IND','ZAF','NGA']},
-'population':{'title':'The world by population','subtitle':'The same geography, resized by a different quantity',
-       'source_note':'Demo only: Natural Earth POP_EST attributes, mixed historical years; not current population estimates.',
-       'divisor':1000000,'suffix':'M','decimals':0,'label_countries':['AUS','BRA','ZAF']}}
-for name,config in configs.items():
-    (ROOT/f'examples/{name}.json').write_text(json.dumps(config,indent=2)+'\n')
-(ROOT/'config.example.json').write_text(json.dumps(DEFAULTS,indent=2)+'\n')
-(DATA/'sources.json').write_text(json.dumps({
- 'provider':'Natural Earth','release_tag':'v5.1.2','dataset':'ne_50m_admin_0_countries.geojson',
- 'url':'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_admin_0_countries.geojson',
- 'license':'Public domain','license_url':'https://www.naturalearthdata.com/about/terms-of-use/',
- 'retrieved':'2026-10-21','sha256':hashlib.sha256((DATA/'countries.geojson').read_bytes()).hexdigest(),
- 'quantity_note':'GDP_MD and POP_EST are historical source attributes with per-row years. Do not use as current statistics.'},indent=2)+'\n')
-print('Prepared',len(catalog),'country and territory definitions')
+YEARS = range(2020, 2023)
+LABELS_3D = {
+    "area_label": "Population (people)",
+    "height_label": "GDP per person (USD)",
+    "volume_label": "GDP (USD)",
+    "height_scale": None,
+}
+CONFIGS = {
+    "gdp": {
+        "title": "GDP by country",
+        "subtitle": "Country area represents GDP",
+        "source_note": "Natural Earth historical GDP; mixed years. Input in USD millions.",
+        "prefix": "$",
+        "divisor": 1_000_000,
+        "suffix": "T",
+        "decimals": 1,
+        "label_countries": ["AUS", "BRA", "IND", "ZAF", "NGA"],
+    },
+    "population": {
+        "title": "Population by country",
+        "subtitle": "Country area represents population",
+        "source_note": "Natural Earth historical population; mixed years.",
+        "divisor": 1_000_000,
+        "suffix": "M",
+        "decimals": 0,
+        "label_countries": ["AUS", "BRA", "ZAF"],
+    },
+}
 
-# A paired input with explicit units. Missing GDP (-99) is excluded, never
-# converted into zero. POP_YEAR and GDP_YEAR are retained separately.
-included = {code for code, row in catalog.items()
-            if row['properties']['POP_EST'] > 0 and row['properties']['GDP_MD'] >= 0}
-with (ROOT/'examples/population-gdp.csv').open('w', newline='') as f:
-    fields = ['country_code', 'population', 'gdp_usd', 'name', 'cluster', 'parent',
-              'population_year', 'gdp_year']
-    writer = csv.DictWriter(f, fieldnames=fields)
-    writer.writeheader()
-    for code in sorted(included):
-        row = catalog[code]
-        parent = row['parent'] if row['parent'] in included else ''
-        writer.writerow({'country_code': code, 'population': row['properties']['POP_EST'],
-                         'gdp_usd': row['properties']['GDP_MD'] * 1_000_000,
-                         'name': row['name'], 'cluster': catalog[parent]['cluster'] if parent else row['cluster'],
-                         'parent': parent, 'population_year': row['properties']['POP_YEAR'],
-                         'gdp_year': row['properties']['GDP_YEAR']})
-(ROOT/'examples/population-gdp.json').write_text(json.dumps({
-    **configs['population'], 'title': 'Population beneath the world economy',
-    'subtitle': 'Footprint area represents population | Paired historical demonstration data',
-    'source_note': 'Natural Earth historical attributes; mixed years. Countries with missing GDP excluded.'
-}, indent=2) + '\n')
-(ROOT/'examples/population-gdp.3d.json').write_text(json.dumps({
-    'title': 'Population beneath the world economy',
-    'area_label': 'Population (people)', 'volume_label': 'GDP (USD)',
-    'height_label': 'GDP per person (USD)',
-    'source_note': 'Demo: Natural Earth POP_EST and GDP_MD; mixed historical years, mostly 2019. Missing GDP excluded; not current statistics.',
-    'height_scale': None,
-}, indent=2) + '\n')
-print('Prepared', len(included), 'paired population/GDP records')
 
-# A synthetic time series, not a claim about observed historical growth.
-included = {code for code, row in catalog.items() if row['properties']['POP_EST'] > 0}
-with (ROOT/'examples/population-timeline.csv').open('w', newline='') as f:
-    fields = ['year', 'country_code', 'value', 'name', 'cluster', 'parent', 'source_population_year']
-    writer = csv.DictWriter(f, fieldnames=fields)
-    writer.writeheader()
-    for year in (2020, 2021, 2022):
-        for code in sorted(included):
-            row = catalog[code]
-            parent = row['parent'] if row['parent'] in included else ''
-            variation = int(hashlib.sha256(code.encode()).hexdigest()[:8], 16) / 2**32
-            annual_factor = .99 + .04 * variation
-            value = round(row['properties']['POP_EST'] * annual_factor ** (year - 2020), 3)
-            writer.writerow({'year': year, 'country_code': code, 'value': value, 'name': row['name'],
-                             'cluster': catalog[parent]['cluster'] if parent else row['cluster'],
-                             'parent': parent, 'source_population_year': row['properties']['POP_YEAR']})
-(ROOT/'examples/population-timeline.json').write_text(json.dumps({
-    **configs['population'], 'title': 'Population through three simulated years',
-    'subtitle': 'Synthetic scenario | Constant area per person across periods',
-    'source_note': 'Synthetic 2020–2022 scenario from historical Natural Earth population attributes; illustrative growth rates, not observed history.',
-}, indent=2) + '\n')
+def write_csv(path, fields, rows):
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def write_json(path, value):
+    path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+
+def country_fields(row, catalog, included):
+    parent = row["parent"] if row["parent"] in included else ""
+    return {
+        "country_code": row["country_code"],
+        "name": row["name"],
+        "parent": parent,
+        "cluster": catalog[parent]["cluster"] if parent else row["cluster"],
+    }
+
+
+def growth_factor(code, lower, spread, prefix=""):
+    seed = int(hashlib.sha256((prefix + code).encode()).hexdigest()[:8], 16) / 2**32
+    return lower + spread * seed
+
+
+def main():
+    catalog = load_catalog(DATA / "countries.geojson")
+    metadata = ["country_code", "name", "cluster", "parent"]
+    populations = []
+    for kind, field, year in [
+        ("gdp", "GDP_MD", "GDP_YEAR"),
+        ("population", "POP_EST", "POP_YEAR"),
+    ]:
+        included = {
+            code for code, row in catalog.items() if row["properties"][field] > 0
+        }
+        rows = [
+            {
+                **country_fields(catalog[code], catalog, included),
+                "value": catalog[code]["properties"][field],
+                "year": catalog[code]["properties"][year],
+            }
+            for code in sorted(included)
+        ]
+        write_csv(
+            EXAMPLES / f"{kind}.csv",
+            ["country_code", "value", *metadata[1:], "year"],
+            rows,
+        )
+        write_json(EXAMPLES / f"{kind}.json", CONFIGS[kind])
+        if kind == "population":
+            populations = rows
+
+    write_csv(
+        DATA / "country_catalog.csv",
+        metadata,
+        [{key: row[key] for key in metadata} for _, row in sorted(catalog.items())],
+    )
+    write_csv(
+        EXAMPLES / "your_values.csv",
+        ["country_code", "value", *metadata[1:]],
+        [
+            {**country_fields(row, catalog, catalog), "value": ""}
+            for _, row in sorted(catalog.items())
+        ],
+    )
+    write_json(ROOT / "config.example.json", DEFAULTS)
+
+    included = {
+        code
+        for code, row in catalog.items()
+        if row["properties"]["POP_EST"] > 0 and row["properties"]["GDP_MD"] >= 0
+    }
+    paired = [
+        {
+            **country_fields(catalog[code], catalog, included),
+            "population": catalog[code]["properties"]["POP_EST"],
+            "gdp_usd": catalog[code]["properties"]["GDP_MD"] * 1_000_000,
+            "population_year": catalog[code]["properties"]["POP_YEAR"],
+            "gdp_year": catalog[code]["properties"]["GDP_YEAR"],
+        }
+        for code in sorted(included)
+    ]
+    write_csv(
+        EXAMPLES / "population-gdp.csv",
+        [
+            "country_code",
+            "population",
+            "gdp_usd",
+            *metadata[1:],
+            "population_year",
+            "gdp_year",
+        ],
+        paired,
+    )
+    paired_config = {
+        **CONFIGS["population"],
+        "title": "Population and GDP",
+        "source_note": "Natural Earth historical population and GDP; mixed years. Missing GDP excluded.",
+    }
+    write_json(EXAMPLES / "population-gdp.json", paired_config)
+    write_json(
+        EXAMPLES / "population-gdp.3d.json",
+        {
+            **LABELS_3D,
+            "title": paired_config["title"],
+            "source_note": paired_config["source_note"],
+        },
+    )
+
+    population_series = [
+        {
+            **{key: row[key] for key in metadata},
+            "year": year,
+            "value": round(
+                row["value"]
+                * growth_factor(row["country_code"], 0.99, 0.04) ** (year - 2020),
+                3,
+            ),
+            "source_population_year": row["year"],
+        }
+        for year in YEARS
+        for row in populations
+    ]
+    write_csv(
+        EXAMPLES / "population-timeline.csv",
+        ["year", "country_code", "value", *metadata[1:], "source_population_year"],
+        population_series,
+    )
+    write_json(
+        EXAMPLES / "population-timeline.json",
+        {
+            **CONFIGS["population"],
+            "title": "Population: synthetic 2020–2022",
+            "subtitle": "Fixed area per person",
+            "source_note": "Synthetic growth applied to historical Natural Earth population; not observed time-series data.",
+        },
+    )
+
+    paired_series = [
+        {
+            **{key: row[key] for key in metadata},
+            "year": year,
+            "population": round(
+                float(row["population"])
+                * growth_factor(row["country_code"], 0.99, 0.04) ** (year - 2020),
+                3,
+            ),
+            "gdp_usd": round(
+                float(row["gdp_usd"])
+                * growth_factor(row["country_code"], 0.96, 0.12, "GDP")
+                ** (year - 2020),
+                3,
+            ),
+        }
+        for year in YEARS
+        for row in paired
+    ]
+    write_csv(
+        EXAMPLES / "population-gdp-timeline.csv",
+        ["year", "country_code", "population", "gdp_usd", *metadata[1:]],
+        paired_series,
+    )
+    write_json(
+        EXAMPLES / "population-gdp-timeline.3d.json",
+        {
+            **LABELS_3D,
+            "title": "Population and GDP: synthetic 2020–2022",
+            "source_note": "Synthetic population/GDP growth from historical Natural Earth attributes; not observed time-series data.",
+        },
+    )
+    print(f"Prepared {len(catalog)} countries and {len(paired)} paired records")
+
+
+if __name__ == "__main__":
+    main()

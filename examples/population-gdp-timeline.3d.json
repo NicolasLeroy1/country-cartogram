@@ -1,0 +1,8 @@
+{
+  "area_label": "Population (people)",
+  "height_label": "GDP per person (USD)",
+  "volume_label": "GDP (USD)",
+  "height_scale": null,
+  "title": "Population and GDP: synthetic 2020\u20132022",
+  "source_note": "Synthetic population/GDP growth from historical Natural Earth attributes; not observed time-series data."
+}

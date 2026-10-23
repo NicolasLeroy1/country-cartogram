@@ -1,6 +1,7 @@
 include LICENSE README.md config.example.json requirements-tested.txt
 recursive-include src/country_cartogram/data *.geojson *.json *.csv
-recursive-include examples *.csv *.json
+recursive-include src/country_cartogram/web *.js *.html *.css *.glsl *.txt
+recursive-include examples *.csv *.json *.json.gz
 recursive-include docs *.md *.png *.gif *.json *.csv *.html
 recursive-include tests *.py
-recursive-include scripts *.py
+recursive-include scripts *.py *.cjs

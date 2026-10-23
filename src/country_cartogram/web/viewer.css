@@ -1,0 +1,252 @@
+:root {
+  color-scheme: light;
+  --ink: #1f3040;
+  --muted: #647480;
+  --line: #dce3e4;
+  --paper: #f7f8f5;
+  --accent: #186c68;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font:
+    15px/1.5 system-ui,
+    sans-serif;
+}
+main {
+  max-width: 1500px;
+  margin: auto;
+  padding: 30px 4vw;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  font-weight: 700;
+}
+h1 {
+  font-size: clamp(26px, 4vw, 42px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin: 10px 0 24px;
+}
+.encoding {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.encoding small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.encoding strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+button,
+select,
+input[type="search"] {
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  padding: 6px 11px;
+}
+button {
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--accent);
+}
+button[aria-pressed="true"],
+#play {
+  background: var(--ink);
+  color: white;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#stamp {
+  min-width: 12ch;
+  margin-right: auto;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.viewport {
+  position: relative;
+  height: min(64vh, 740px);
+  min-height: 320px;
+  background: var(--paper);
+}
+.timeline-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+#estimate-key {
+  margin: 0;
+  padding: 0 16px 14px;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+#notice {
+  position: absolute;
+  inset: 20px;
+  pointer-events: none;
+  color: var(--muted);
+}
+#tooltip {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  background: #203140f2;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  max-width: 300px;
+  font-size: 13px;
+  box-shadow: 0 4px 24px #18314a22;
+  z-index: 2;
+}
+#tooltip strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+.timeline {
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.legend {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px;
+  flex-wrap: wrap;
+}
+.legend button {
+  font-size: 12px;
+  border-radius: 20px;
+}
+.legend i {
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.hint,
+footer {
+  color: var(--muted);
+  font-size: 12px;
+}
+.hint {
+  margin: 12px 0;
+}
+footer {
+  margin: 20px 0;
+}
+details {
+  margin-top: 24px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.table-wrap {
+  overflow: auto;
+  max-height: 360px;
+  margin-top: 12px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+td,
+th {
+  text-align: right;
+  padding: 9px;
+  border-bottom: 1px solid var(--line);
+}
+th:first-child {
+  text-align: left;
+}
+#opacity-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+#opacity {
+  width: 90px;
+  margin: 0;
+}
+#opacity-value {
+  min-width: 32px;
+}
+#search {
+  margin-left: auto;
+  width: 180px;
+}
+#scale {
+  font-size: 12px;
+  color: var(--muted);
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 600px) {
+  main {
+    padding: 18px 14px;
+  }
+  .encoding {
+    gap: 14px;
+  }
+  .viewport {
+    height: 55vh;
+  }
+  .toolbar {
+    padding: 10px;
+  }
+  #search {
+    width: 130px;
+  }
+  .encoding strong {
+    font-size: 12px;
+  }
+}

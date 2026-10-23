@@ -1,7 +1,7 @@
 {
-  "title": "The world economy by size",
-  "subtitle": "Countries resized by nominal GDP | Historical demonstration dataset",
-  "source_note": "Demo only: Natural Earth GDP_MD attributes, mixed years (mostly 2019); not current GDP. USD millions in input.",
+  "title": "GDP by country",
+  "subtitle": "Country area represents GDP",
+  "source_note": "Natural Earth historical GDP; mixed years. Input in USD millions.",
   "prefix": "$",
   "divisor": 1000000,
   "suffix": "T",

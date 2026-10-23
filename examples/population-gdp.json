@@ -1,7 +1,7 @@
 {
-  "title": "Population beneath the world economy",
-  "subtitle": "Footprint area represents population | Paired historical demonstration data",
-  "source_note": "Natural Earth historical attributes; mixed years. Countries with missing GDP excluded.",
+  "title": "Population and GDP",
+  "subtitle": "Country area represents population",
+  "source_note": "Natural Earth historical population and GDP; mixed years. Missing GDP excluded.",
   "divisor": 1000000,
   "suffix": "M",
   "decimals": 0,

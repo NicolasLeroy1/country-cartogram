@@ -1,59 +1,11 @@
-# Time series and continuation
+# Time series and checkpoints
 
-Temporal maps should evolve from the previous map rather than repeat geographic
-initialization. This package supports both a single update and a complete time
-series, including continuation from a checkpoint saved in an earlier run.
+Each period starts from the preceding layout. The engine reuses its prepared
+shapes, positions, island arrangement, and original geographic anchors.
 
-## Update one map
+## Input
 
-```bash
-country-cartogram values_2021.csv --initial-layout output/map_2020.layout.json \
-  --config my_config.json --out output/map_2021 --animate
-```
-
-The optional animation starts with **Previous layout**. Both forces remain
-active as countries grow or shrink. The first frame has the previous map's
-positions, areas, and island arrangements; islands are not unfolded back to
-their remote geographic positions. Velocities start at zero. The original
-geographic anchors and parent directions are preserved to limit cumulative
-drift across a long sequence.
-
-Only quantities, display names, styles, and force settings may change. Country
-coverage, grouping, parent links, the boundary source, and outline preparation
-settings must remain compatible. A changed `simplify`, `satellite_distance`,
-`min_part_fraction`, or `max_parts` setting requires a fresh layout. Starting
-from a legacy two-stage packing is not supported.
-
-Version 0.3 layouts contain the anchor frame and boundary fingerprint themselves.
-Older growth-mode layouts work when their companion `.audit.json` is present.
-Old anchors are reconstructed from source component centers; new layouts retain
-the exact anchor coordinates. Never substitute a different boundary file to
-resume an existing series.
-
-`country-cartogram` still normalizes each individual run to `total_area`.
-For a fixed absolute scale across individual updates, set each run's
-`total_area = fixed_area_per_unit * sum(values)`, or use the timeline command,
-which manages this automatically.
-
-Python API:
-
-```python
-from pathlib import Path
-from country_cartogram.pipeline import run
-
-report = run(
-    Path("values_2021.csv"), initial_layout=Path("output/map_2020.layout.json"),
-    config_path=Path("my_config.json"), output=Path("output/map_2021"),
-)
-print(report["packing"]["mean_displacement_from_start"])
-```
-
-The same update may also use `--volume-column` to regenerate a 3D export with a
-second variable. The dedicated timeline viewer is 2D.
-
-## Process a time series
-
-Use one row per country and period, with integer period labels:
+Use a long CSV with integer periods and a consistent country cohort:
 
 ```csv
 year,country_code,value
@@ -61,131 +13,168 @@ year,country_code,value
 2020,DEU,80
 2021,FRA,62
 2021,DEU,81
-2022,FRA,63
-2022,DEU,83
 ```
 
-These numbers illustrate the format. Periods are sorted numerically; input rows
-may be unordered. Optional columns `name`, `cluster`, and `parent` have the same
-meaning as in ordinary inputs. Use `--time-column` or `--value-column` to select
-other column names. Period labels need not be consecutive, but must be integers.
-The exporter does not infer missing observations or interpolate a statistical
-time series.
+Periods are sorted numerically. Select columns with `--time-column` and
+`--value-column`. Optional `name`, `cluster`, and `parent` columns follow the
+[ordinary input rules](usage.md).
+
+The completed series must contain positive quantities for the same countries
+in every period. Groups, parents, boundary source, and shape preparation settings
+stay fixed. Inputs are validated and any requested missing-value filling happens
+before the first simulation.
+
+## Missing values and changing countries
+
+By default, missing rows or values are errors. Opt in to a consistent cohort:
 
 ```bash
-country-cartogram-timeline series.csv --config style.json --out output/history
+country-cartogram-timeline history.csv --missing-values interpolate \
+  --viewer-only --out output/history
 ```
 
-The first period starts geographically. Every subsequent period starts from the
-preceding **audited endpoint**. Inputs, codes, groups, and period coverage are
-validated before the first simulation. Every period gets a `.layout.json`,
-`.audit.json`, `.metrics.csv`, and selected figures. `--formats svg` avoids PNG
-work when vector files and interactive playback suffice.
+`interpolate` fills interior gaps linearly using actual year distances. Before
+the first known value and after the last, it holds the nearest known value.
+`--missing-values carry` holds the previous value inside gaps instead. Each
+country needs at least one known positive value. Negative, zero, and nonfinite
+values remain errors. Missing rows are filled for the periods present in the
+input; new calendar periods are not created automatically.
 
-The generated files include:
+Filling writes `value_status` (`observed`, `interpolated`, `carried_forward`,
+or `carried_backward`) and `value_note` into the prepared per-period inputs.
+The solver uses those completed values for areas. Layouts, metrics, and audits
+retain their status. Estimated countries are grey in the viewer and static
+figures; hover and the values table explain the method. You can supply these
+columns yourself when using a different estimation method; use the generic
+`estimated` status and describe the method in `value_note`.
 
-| File | Purpose |
+Use consistent territorial units across the whole series. For example, keep
+today's outlines throughout and estimate GDP on those units. A merger or split
+needs a territory/value crosswalk first: carrying national totals alone cannot
+allocate a predecessor's economy among successors. Avoid including both totals
+for the same territory. Historical border changes are not simulated.
+
+Automatic filling currently supports 2D. For 3D, prepare both quantities and
+their estimates explicitly before running the timeline.
+
+## Forty-year GDP showcase
+
+```bash
+country-cartogram-timeline examples/gdp-1985-2024.csv \
+  --config examples/gdp-1985-2024.json --normalization shares \
+  --viewer-only --out output/gdp-1985-2024
+```
+
+[Open/download the example](gallery/gdp-1985-2024.html). It covers 209 economies
+on present-day Natural Earth boundaries for 1985–2024. The source is World Bank
+WDI [GDP in constant 2015 US dollars](https://data.worldbank.org/indicator/NY.GDP.MKTP.KD),
+licensed CC BY 4.0. GDP shares refer to the included cohort, not total world GDP.
+Missing annual inputs are estimated before physics; economies with no known
+GDP are excluded. [Provenance](../examples/gdp-1985-2024.provenance.json) records
+the source date, snapshot and CSV hashes, exclusions, and World Bank/Natural
+Earth code mapping.
+
+`python scripts/prepare_gdp_timeline.py` reproduces the CSV and configuration
+offline from the pinned compressed API response. `--refresh` downloads a new
+response and changes the source date and hashes.
+
+## Run a series
+
+```bash
+country-cartogram-timeline examples/population-timeline.csv \
+  --config examples/population-timeline.json --viewer-only --out output/history
+```
+
+Open `output/history/timeline.html` to play, scrub, inspect values, or jump to an
+annual input. A fixed camera, persistent shapes, and continuous movement help
+track countries across years. The viewer interpolates positions and areas
+between captured solver states while preserving the quantity encoding. This
+display smoothing does not fill missing annual inputs. At 1×, one calendar year
+takes one second regardless of how many solver frames that year required.
+The year selector and arrow buttons jump to exact annual inputs.
+
+The same viewer supports [experimental 3D](3d.md) with two quantities. Tall
+columns on small footprints can be hard to read; use the flat timeline for
+presentations centered on the first quantity.
+
+```bash
+country-cartogram-timeline examples/population-gdp-timeline.csv \
+  --value-column population --volume-column gdp_usd \
+  --config examples/population-gdp.json --config-3d examples/population-gdp-timeline.3d.json \
+  --viewer-only --out output/history-3d
+```
+
+Area represents the first quantity, height the second divided by the first,
+and volume the second. Heights share one scale across all periods. The second
+quantity follows growth progress between observations and stays fixed while
+positions settle. In shares mode, intermediate first quantities are recovered
+from footprint shares and the interpolated total to keep the encodings consistent.
+
+## Normalization
+
+The default `--normalization fixed` uses:
+
+```text
+area_per_unit = configured total_area / first-period sum
+country_area = area_per_unit × country_value
+```
+
+The same quantity occupies the same area in every period. Total land area may
+change; appending periods does not change earlier scaling.
+
+`--normalization shares` keeps `total_area` fixed. A constant country value can
+shrink when the period total grows. Hover values include the period share.
+
+## Continue from a checkpoint
+
+For a single map update:
+
+```bash
+country-cartogram values_2021.csv --initial-layout output/map_2020.layout.json \
+  --config config.json --out output/map_2021
+```
+
+This command normalizes each run independently. Set `total_area` to
+`fixed_area_per_unit × sum(values)` yourself for absolute comparisons, or use
+the timeline command to manage that scale.
+
+Append one or more periods in a separate output directory:
+
+```bash
+country-cartogram-timeline later.csv --initial-layout output/history/2022.layout.json \
+  --initial-time 2022 --config config.json --viewer-only --out output/later
+```
+
+Fixed mode inherits the checkpoint's area-per-unit factor. Shares mode requires
+the checkpoint total area to match `total_area`. A 3D checkpoint also needs
+`--initial-values output/history-3d/inputs/2022.csv` with both previous quantities.
+Use an explicit 3D `height_scale` to keep the vertical scale across separate exports.
+
+The first frame matches the checkpoint. Velocities restart at zero; small area
+changes use fewer growth stages. Changing `shape_error`, `simplify`, island
+settings, or boundaries requires a fresh layout. For checkpoints predating
+`shape_error`, set it to `0`; older layouts also need their companion audit.
+
+## Files and computation
+
+| Output | Content |
 | --- | --- |
-| `timeline.html` | Offline SVG player with play/pause, scrubbing, period navigation, and country hover |
-| `timeline.audit.json` | Normalization, input hash, continuation provenance, per-period audits and solver timings |
-| `2020.layout.json`, etc. | Reusable per-period checkpoints with polygons and anchor state |
-| `2020.svg` / `.png`, etc. | Per-period figures according to `--formats` |
-| `inputs/2020.csv`, `.json`, etc. | Exact per-period input and configuration used |
-| `timeline.gif` | Optional (`--gif`) slideshow of audited period endpoints |
+| `timeline.html` | Offline 2D/3D viewer |
+| `timeline.audit.json` | Scaling, source hash, period audits, solver timings |
+| `2020.layout.json`, etc. | Reusable checkpoints |
+| `2020.audit.json`, `.metrics.csv` | Per-period numerical checks |
+| `inputs/2020.csv`, `.json` | Exact inputs and solver configuration |
+| Per-period figures | Enabled by default; skip with `--viewer-only` |
+| `timeline.gif` | Optional endpoint slideshow (`--gif`) |
 
-The HTML plays actual simulation states captured during resizing and settling;
-it does not morph unrelated independently packed maps. The camera is fixed over
-the union of all displayed frames, and colors remain consistent. Intermediate
-frames are solver states between observations, not additional observed years.
-The GIF intentionally shows period endpoints only; use the HTML for transitions.
+The boundary catalog is parsed once, hull fixtures are cached between periods,
+and each country is triangulated once for the viewer. Playback updates compressed
+positions, scales, and heights without rebuilding meshes. Rendering stops while paused. Warm starts can
+still trigger contact rearrangements, so inspect convergence, movement, and
+solver timings in the audit. Endpoint checks do not certify every transient frame.
 
-## Choose the normalization
-
-The default, `--normalization fixed`, uses
-
-```text
-area_per_unit = configured total_area / sum(first-period values)
-country_area(period) = area_per_unit * country_value(period)
-```
-
-The same quantity therefore occupies the same area in every period. The total
-land area may grow or shrink. Fixing the reference to the first period also
-means appending future periods does not change earlier results.
-
-`--normalization shares` retains the same total area in every period:
-
-```text
-country_area(period) = total_area * value(period) / sum(period values)
-```
-
-In that mode, a country whose value stays constant can shrink when other values
-grow. The viewer's hover values display shares. Select the normalization based
-on whether you intend to compare absolute quantities or relative shares.
-
-## Append observations from a checkpoint
-
-Do not recompute earlier years when new data arrive:
-
-```bash
-country-cartogram-timeline new_observations.csv \
-  --initial-layout output/history/2022.layout.json --initial-time 2022 \
-  --config style.json --out output/new-observations
-```
-
-This also accepts a CSV with just one new period. The checkpoint is the first
-visible frame and starts the next simulation directly. Fixed normalization
-inherits the checkpoint's area-per-unit factor. In shares mode, the checkpoint
-total area must equal the configured `total_area`. Keep quantity units consistent.
-`--initial-time` only labels the checkpoint; it does not modify data. The original
-series is left in its existing output directory.
-
-## Performance and constraints
-
-Continuation skips geographic projection, coastline simplification, and island
-repacking. It uniformly resizes the exact retained shapes from the checkpoint
-and initializes bodies at their saved positions. It adapts the number of resizing
-stages to the largest absolute log area ratio: small changes use as few as four,
-while large changes retain the configured `growth_steps` budget. Unchanged areas
-skip resizing stages. Collision resolution and the original settling tolerance
-remain active; there is no loosened audit or convergence threshold.
-
-The browser receives one SVG path per country plus compact arrays of positions
-and scales for each captured frame. The engine does not reconstruct or retain
-full coastline geometry for these timeline frames. HTML playback only changes
-SVG transforms; it needs no Python server or external JavaScript library.
-Static rendering is separate. GIF export is optional.
-
-The current continuation implementation requires a stable cohort with **strictly
-positive quantities** in every period. Adding/removing countries, crossing zero,
-changing clusters, or changing boundary topology requires an explicitly new
-layout. Negative and missing quantities are rejected. This avoids inventing a
-minimum footprint, dropping observations silently, or presenting a geographic
-reset as continuity.
-
-Warm starts encourage temporal continuity but do not guarantee small movements
-or faster convergence for every dataset. Large changes can trigger contact
-rearrangements. Layouts are path-dependent: a continued result need not match a
-freshly initialized result for the same final values. The audit records elapsed
-physics time, actual resizing stages, settling iterations, convergence, and mean
-and maximum displacement from the initial positions. Check these along with the
-area/gap audit when interpreting time-series motion. Transient solver frames are
-not individually certified by the final geometry audit.
-
-The included `population-timeline.csv` is a synthetic 2020–2022 scenario built
-from historical Natural Earth population attributes and deterministic invented
-growth rates. The labels are illustrative; it is not observed demographic history.
-
-Observed results for this 232-country scenario on the development machine:
-
-| Period | Initialization | Physics time | Resize stages | Settling steps | Mean country movement |
-| --- | --- | ---: | ---: | ---: | ---: |
-| 2020 | Geographic | 28.73 s | 80 | 4,432 | 23.83 chart units |
-| 2021 | Previous map | 3.25 s | 4 | 730 | 0.50 chart units |
-| 2022 | Previous map | 2.21 s | 4 | 168 | 0.33 chart units |
-
-All three converged with `position_tolerance = 0.002`, had no overlapping pairs,
-and passed the configured gap and area checks. Times exclude figure rendering
-and file export. These are an initial solve and two small-change updates, not
-identical workloads; other datasets can behave differently. The HTML contains
-16 captured states and is 1.46 MB. See the [recorded audit](gallery/population-timeline.audit.json)
-and [interactive example](gallery/population-timeline.html) (download and open locally).
+In each period's audit, `overlap_pairs` and `max_relative_area_error` check the
+geometry. `packing.equilibrium_converged` separately reports whether motion fell
+below the stopping tolerance. A map can have valid areas and gaps while still
+reaching its settling limit. Check this flag when assessing a series; valid
+areas and gaps alone do not imply equilibrium.

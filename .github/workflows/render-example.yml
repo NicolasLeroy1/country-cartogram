@@ -13,6 +13,8 @@ on:
           - population
           - population-gdp
           - population-timeline
+          - population-gdp-timeline
+          - gdp-1985-2024
 
 permissions:
   contents: read
@@ -28,14 +30,23 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pyproject.toml
-      - run: python -m pip install '.[3d]'
+      - run: python -m pip install .
       - name: Generate and audit the cartogram
         env:
           DATASET: ${{ inputs.dataset }}
         run: |
-          if [ "$DATASET" = "population-timeline" ]; then
+          if [ "$DATASET" = "gdp-1985-2024" ]; then
+            country-cartogram-timeline examples/gdp-1985-2024.csv \
+              --config examples/gdp-1985-2024.json --normalization shares \
+              --out output/gdp-1985-2024 --viewer-only
+          elif [ "$DATASET" = "population-timeline" ]; then
             country-cartogram-timeline examples/population-timeline.csv \
               --config examples/population-timeline.json --out output/population-timeline --gif
+          elif [ "$DATASET" = "population-gdp-timeline" ]; then
+            country-cartogram-timeline examples/population-gdp-timeline.csv \
+              --value-column population --volume-column gdp_usd \
+              --config examples/population-gdp.json --config-3d examples/population-gdp-timeline.3d.json \
+              --out output/population-gdp-timeline --viewer-only
           elif [ "$DATASET" = "population-gdp" ]; then
             country-cartogram examples/population-gdp.csv --value-column population --volume-column gdp_usd \
               --config examples/population-gdp.json --config-3d examples/population-gdp.3d.json \

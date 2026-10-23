@@ -1,9 +1,8 @@
 # Direct dependency versions used for the included figures and local validation (Python 3.12).
 numpy==2.5.4
-matplotlib==3.10.8
+matplotlib==3.11.2
 shapely==2.2.0
 pyproj==3.8.0
 pymunk==7.3.1
 pillow==12.3.0
-# Optional 3D renderer, used for the paired example.
-plotly==6.9.0
+# Browser renderer: bundled Three.js 0.186.1 (MIT); no optional Python 3D dependency.

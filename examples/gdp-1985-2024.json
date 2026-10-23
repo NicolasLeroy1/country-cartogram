@@ -1,0 +1,20 @@
+{
+  "title": "GDP, 1985–2024",
+  "subtitle": "Country area shows share of GDP among included economies",
+  "value_label": "GDP (constant 2015 US$)",
+  "source_note": "World Bank WDI · NY.GDP.MKTP.KD · constant 2015 US$ · 209 economies on present-day boundaries. Grey values are interpolated or held from the nearest observed year. Economies without any known GDP excluded. CC BY 4.0.",
+  "prefix": "$",
+  "divisor": 1000000000000.0,
+  "suffix": "T",
+  "decimals": 1,
+  "country_gap": 0.2,
+  "cluster_gap": 3.6,
+  "label_countries": [
+    "USA",
+    "CHN",
+    "JPN",
+    "DEU",
+    "IND",
+    "BRA"
+  ]
+}
