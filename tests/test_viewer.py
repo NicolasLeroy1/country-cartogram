@@ -16,7 +16,7 @@ from country_cartogram.configuration import load_config
 from country_cartogram.extrusion import build_scene, write_html, load_3d_config
 from country_cartogram.viewer import write_timeline_viewer, write_document
 from country_cartogram.timeline import run_timeline
-from country_cartogram.geometry import prepare_country
+from country_cartogram.geometry import prepare_region
 
 
 def decode(path):
@@ -25,7 +25,7 @@ def decode(path):
     data = json.loads(gzip.decompress(base64.b64decode(encoded)))
     transforms = np.frombuffer(
         base64.b64decode(data["transforms"]), dtype="<f4"
-    ).reshape(data["frameCount"], len(data["countries"]), 4)
+    ).reshape(data["frameCount"], len(data["regions"]), 4)
     return data, transforms
 
 
@@ -37,7 +37,7 @@ class ViewerTests(unittest.TestCase):
                 {
                     "mode": "2d",
                     "config": load_3d_config(),
-                    "countries": [{"name": "France", "code": "FRA"}],
+                    "regions": [{"name": "France", "id": "FRA"}],
                     "observations": [[[7, 11, 77]]],
                 },
                 path,
@@ -54,8 +54,8 @@ class ViewerTests(unittest.TestCase):
         self,
     ):
         source = Point(2, 45).buffer(0.4, quad_segs=256)
-        exact, anchor, _ = prepare_country(mapping(source), 100, simplify=0)
-        simple, simplified_anchor, detail = prepare_country(
+        exact, anchor, _ = prepare_region(mapping(source), 100, simplify=0)
+        simple, simplified_anchor, detail = prepare_region(
             mapping(source), 100, shape_error=0.02
         )
         self.assertLess(
@@ -75,7 +75,7 @@ class ViewerTests(unittest.TestCase):
             ring.exterior.coords, holes=[Point(2, 45).buffer(0.05).exterior.coords]
         )
         source = MultiPolygon([mainland, box(3, 45, 3.05, 45.05)])
-        simple, _, detail = prepare_country(mapping(source), 100, shape_error=0.02)
+        simple, _, detail = prepare_region(mapping(source), 100, shape_error=0.02)
         self.assertTrue(simple.is_valid)
         self.assertEqual(len(simple.geoms), 2)
         self.assertEqual(sum(len(p.interiors) for p in simple.geoms), 1)
@@ -88,26 +88,26 @@ class ViewerTests(unittest.TestCase):
     def test_static_binary_payload_with_flat_country_and_untrusted_text(self):
         with tempfile.TemporaryDirectory() as tmp:
             layout = {
-                "countries": [
+                "regions": [
                     {
-                        "country_code": c,
+                        "id": c,
                         "name": "</script>@@DATA@@",
-                        "cluster": "A",
+                        "group": "A",
                         "value": 4.0,
                         "geometry": mapping(box(x, 0, x + 2, 2)),
                     }
                     for c, x in [("AAA", 0), ("BBB", 4)]
                 ]
             }
-            layout["countries"][1].update(
+            layout["regions"][1].update(
                 value_status="estimated", value_note="Held from the previous year"
             )
-            countries, report = build_scene(layout, {"AAA": (4, 8), "BBB": (4, 0)})
+            regions, report = build_scene(layout, {"AAA": (4, 8), "BBB": (4, 0)})
             path = Path(tmp) / "scene.html"
-            write_html(countries, report, path)
+            write_html(regions, report, path)
             data, transforms = decode(path)
             self.assertEqual(data["config"]["opacity"], 0.4)
-            self.assertEqual(data["countries"][0]["name"], "</script>@@DATA@@")
+            self.assertEqual(data["regions"][0]["name"], "</script>@@DATA@@")
             self.assertNotIn("</script>@@DATA@@", path.read_text())
             self.assertEqual(transforms[0, 1, 3], 0)
             self.assertGreater(transforms[0, 0, 3], 0)
@@ -115,7 +115,7 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(data["valueStatuses"][""], ["observed", "estimated"])
             self.assertEqual(data["valueNotes"][""][1], "Held from the previous year")
             self.assertIn('<th scope="col">Value status</th>', path.read_text())
-            for c in data["countries"]:
+            for c in data["regions"]:
                 v = np.frombuffer(base64.b64decode(c["vertices"]), dtype="<f4").reshape(
                     -1, 3
                 )
@@ -124,11 +124,11 @@ class ViewerTests(unittest.TestCase):
 
     def test_timeline_shares_encoding_and_one_global_height_scale(self):
         base = {
-            "countries": [
+            "regions": [
                 {
-                    "country_code": c,
+                    "id": c,
                     "name": c,
-                    "cluster": "A",
+                    "group": "A",
                     "value": 1.0,
                     "position": [x, 0],
                     "geometry": mapping(box(x - 1, -1, x + 1, 1)),
@@ -188,7 +188,7 @@ class ViewerTests(unittest.TestCase):
     def test_invalid_second_quantity_fails_before_any_simulation(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "series.csv"
-            path.write_text("year,country_code,value,b\n2020,FRA,1,2\n2021,FRA,1,-1\n")
+            path.write_text("year,id,value,b\n2020,FRA,1,2\n2021,FRA,1,-1\n")
             with patch("country_cartogram.timeline.run") as simulate:
                 with self.assertRaises(ValueError):
                     run_timeline(
@@ -204,15 +204,15 @@ class ViewerTests(unittest.TestCase):
                 json.dumps({"total_area": 10, "growth_steps": 4, "labels": 0})
             )
             csv = root / "series.csv"
-            csv.write_text("year,country_code,value,b\n2020,FRA,1,4\n2021,FRA,1.1,5\n")
+            csv.write_text("year,id,value,b\n2020,FRA,1,4\n2021,FRA,1.1,5\n")
             first = root / "first"
             run_timeline(
                 csv, output=first, config_path=config, volume_column="b", formats=()
             )
             later = root / "later.csv"
-            later.write_text("year,country_code,value,b\n2022,FRA,1.2,6\n")
+            later.write_text("year,id,value,b\n2022,FRA,1.2,6\n")
             with patch(
-                "country_cartogram.pipeline.prepare_country",
+                "country_cartogram.pipeline.prepare_region",
                 side_effect=AssertionError("Reprepared checkpoint"),
             ):
                 report = run_timeline(

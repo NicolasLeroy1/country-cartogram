@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 from shapely.geometry import shape
 from .configuration import DEFAULTS
-from .pipeline import render
+from .rendering import render
 
 STYLE_KEYS = {
     "title",
@@ -19,7 +19,7 @@ STYLE_KEYS = {
     "suffix",
     "decimals",
     "labels",
-    "label_countries",
+    "label_regions",
     "label_offsets",
     "label_aliases",
     "background",
@@ -69,7 +69,7 @@ def restyle(
             config[key] = value
     if config["divisor"] <= 0:
         raise ValueError("divisor must be positive")
-    rows = json.loads(layout_path.read_text())["countries"]
+    rows = json.loads(layout_path.read_text())["regions"]
     output.parent.mkdir(parents=True, exist_ok=True)
     omitted = render(
         [shape(r["geometry"]) for r in rows],
@@ -78,6 +78,7 @@ def restyle(
         output,
         formats,
         dpi,
+        boundary_label=audit["map"]["label"],
     )
     audit["config"] = config
     audit["omitted_labels"] = omitted

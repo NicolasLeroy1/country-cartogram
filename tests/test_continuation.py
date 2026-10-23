@@ -24,24 +24,22 @@ class ContinuationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.config = load_config()
-        self.config.update(
-            total_area=8, country_gap=0.1, geographic_pull=0, cluster_pull=0
-        )
+        self.config.update(total_area=8, region_gap=0.1, anchor_pull=0, group_pull=0)
         self.rows = [
             {
-                "country_code": c,
+                "id": c,
                 "name": c,
-                "cluster": "Example",
+                "group": "Example",
                 "parent": "",
                 "value": v,
             }
             for c, v in [("AAA", 4.1), ("BBB", 3.9)]
         ]
         self.old = {
-            "countries": [],
+            "regions": [],
             "simulation_state": {
-                "geographic_scale": 1.0,
-                "geographic_anchors": {"AAA": [0, 0], "BBB": [10, 0]},
+                "map_scale": 1.0,
+                "map_anchors": {"AAA": [0, 0], "BBB": [10, 0]},
                 "geometry_config": {k: self.config[k] for k in GEOMETRY_KEYS},
                 "boundaries_sha256": "test",
             },
@@ -51,11 +49,11 @@ class ContinuationTests(unittest.TestCase):
             # from geographic anchors to catch accidental reinitialization.
             parts = [box(-1, -1, 1, 0.5), box(3, 0, 4, 1)]
             geometry = translate(MultiPolygon(parts), *position)
-            self.old["countries"].append(
+            self.old["regions"].append(
                 {
-                    "country_code": code,
+                    "id": code,
                     "name": code,
-                    "cluster": "Example",
+                    "group": "Example",
                     "parent": "",
                     "value": 4.0,
                     "position": position,
@@ -99,7 +97,7 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(report["method"], "continued_growth_rigid_body_physics")
         self.assertEqual(report["growth_steps"], 4)
         np.testing.assert_array_equal(frames[0]["positions"], [[100, 100], [120, 100]])
-        for prior, first in zip(self.old["countries"], frames[0]["geometries"]):
+        for prior, first in zip(self.old["regions"], frames[0]["geometries"]):
             self.assertLess(
                 shape(prior["geometry"]).symmetric_difference(first).area, 1e-10
             )
@@ -112,7 +110,7 @@ class ContinuationTests(unittest.TestCase):
     def test_rejects_incompatible_coverage_geometry_and_groups(self):
         bad_config = {**self.config, "simplify": 0.1}
         bad_rows = copy.deepcopy(self.rows)
-        bad_rows[0]["cluster"] = "Different"
+        bad_rows[0]["group"] = "Different"
         for rows, config, sha in (
             (self.rows[:1], self.config, "test"),
             (self.rows, bad_config, "test"),
@@ -159,7 +157,7 @@ class ContinuationTests(unittest.TestCase):
             "2020,AAA,1\n2020,AAA,2\n2021,AAA,3",
             "2020,AAA,nan\n2021,AAA,2",
         ):
-            path.write_text("year,country_code,value\n" + content + "\n")
+            path.write_text("year,id,value\n" + content + "\n")
             with self.subTest(content=content), self.assertRaises(ValueError):
                 read_timeline(path)
 
@@ -169,7 +167,7 @@ class ContinuationTests(unittest.TestCase):
         from country_cartogram.pipeline import run
 
         path = self.root / "missing.csv"
-        path.write_text("year,country_code,value\n2000,FRA,1\n2001,DEU,2\n2002,FRA,3\n")
+        path.write_text("year,id,value\n2000,FRA,1\n2001,DEU,2\n2002,FRA,3\n")
         cfg = self.root / "fill.json"
         cfg.write_text(json.dumps({"total_area": 100, "growth_steps": 4, "labels": 0}))
         supplied = []
@@ -177,7 +175,7 @@ class ContinuationTests(unittest.TestCase):
         def inspect_inputs(csv_path, **kwargs):
             with Path(csv_path).open(newline="") as stream:
                 rows = list(csv.DictReader(stream))
-            supplied.append({r["country_code"]: r for r in rows})
+            supplied.append({r["id"]: r for r in rows})
             self.assertEqual(len(rows), 2)
             self.assertTrue(all(float(r["value"]) > 0 for r in rows))
             return run(csv_path, **kwargs)
@@ -198,13 +196,11 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(report["estimated_counts"], {2000: 1, 2001: 1, 2002: 1})
         for year, expected in [(2000, 100 / 3), (2001, 50), (2002, 60)]:
             layout = json.loads((self.root / f"filled/{year}.layout.json").read_text())
-            country = next(r for r in layout["countries"] if r["country_code"] == "FRA")
+            country = next(r for r in layout["regions"] if r["id"] == "FRA")
             self.assertAlmostEqual(shape(country["geometry"]).area, expected)
         fields, carried = read_timeline(path, missing_values="carry")
         self.assertEqual(
-            float(
-                next(r for r in carried[2001] if r["country_code"] == "FRA")["value"]
-            ),
+            float(next(r for r in carried[2001] if r["id"] == "FRA")["value"]),
             1,
         )
 
@@ -213,13 +209,13 @@ class ContinuationTests(unittest.TestCase):
 
         path = self.root / "shares.csv"
         path.write_text(
-            "year,country_code,value\n2020,FRA,3\n2020,DEU,5\n2020,ESP,2\n"
+            "year,id,value\n2020,FRA,3\n2020,DEU,5\n2020,ESP,2\n"
             "2021,FRA,3\n2021,DEU,7\n2021,ESP,2\n"
         )
         cfg = self.root / "shares.json"
         cfg.write_text(
             json.dumps(
-                {"total_area": 100, "country_gap": 0.1, "growth_steps": 12, "labels": 0}
+                {"total_area": 100, "region_gap": 0.1, "growth_steps": 12, "labels": 0}
             )
         )
         report = run_timeline(
@@ -233,23 +229,20 @@ class ContinuationTests(unittest.TestCase):
         areas = []
         for year in (2020, 2021):
             layout = json.loads((self.root / f"shares/{year}.layout.json").read_text())
-            values = {
-                r["country_code"]: shape(r["geometry"]).area
-                for r in layout["countries"]
-            }
+            values = {r["id"]: shape(r["geometry"]).area for r in layout["regions"]}
             self.assertAlmostEqual(sum(values.values()), 100)
             areas.append(values["FRA"])
         np.testing.assert_allclose(areas, [30, 25], atol=1e-8)
 
     def test_installed_timeline_preserves_absolute_scale_and_chains_states(self):
         (self.root / "series.csv").write_text(
-            "year,country_code,value\n2020,FRA,3\n2020,DEU,5\n2020,ESP,2\n"
+            "year,id,value\n2020,FRA,3\n2020,DEU,5\n2020,ESP,2\n"
             "2021,FRA,3.1\n2021,DEU,5.1\n2021,ESP,2.1\n"
             "2022,FRA,3.2\n2022,DEU,5.2\n2022,ESP,2.2\n"
         )
         (self.root / "config.json").write_text(
             json.dumps(
-                {"total_area": 100, "country_gap": 0.1, "growth_steps": 12, "labels": 0}
+                {"total_area": 100, "region_gap": 0.1, "growth_steps": 12, "labels": 0}
             )
         )
         result = subprocess.run(
@@ -284,7 +277,7 @@ class ContinuationTests(unittest.TestCase):
             layout = json.loads((root / f"{year}.layout.json").read_text())
             self.assertEqual(layout["simulation_state"], original["simulation_state"])
             audit = json.loads((root / f"{year}.audit.json").read_text())
-            self.assertEqual(audit["continuation"]["reused_country_count"], 3)
+            self.assertEqual(audit["continuation"]["reused_region_count"], 3)
             self.assertEqual(audit["overlap_pairs"], [])
             self.assertLess(audit["max_relative_area_error"], 1e-8)
         html = (root / "timeline.html").read_text()
@@ -299,7 +292,7 @@ class ContinuationTests(unittest.TestCase):
         # A separate invocation must continue from the last checkpoint without
         # normalizing everything again or restarting its geographic simulation.
         (self.root / "later.csv").write_text(
-            "year,country_code,value\n2023,FRA,3.3\n2023,DEU,5.3\n2023,ESP,2.3\n"
+            "year,id,value\n2023,FRA,3.3\n2023,DEU,5.3\n2023,ESP,2.3\n"
         )
         resumed = subprocess.run(
             [

@@ -12,30 +12,30 @@ import numpy as np
 from shapely.geometry import Polygon, MultiPolygon, box, mapping
 from shapely import union_all
 
+from country_cartogram.values import read_quantity_pairs
 from country_cartogram.extrusion import (
     audit_mesh,
     build_scene,
     extrude_polygon,
     load_3d_config,
-    read_quantity_pairs,
 )
 
 
 def example_layout():
     # Both footprints have the same scale: two square units per person.
     return {
-        "countries": [
+        "regions": [
             {
-                "country_code": "AAA",
+                "id": "AAA",
                 "name": "First",
-                "cluster": "Group",
+                "group": "Group",
                 "value": 2,
                 "geometry": mapping(box(0, 0, 2, 2)),
             },
             {
-                "country_code": "BBB",
+                "id": "BBB",
                 "name": "Second",
-                "cluster": "Group",
+                "group": "Group",
                 "value": 4,
                 "geometry": mapping(box(4, 0, 8, 2)),
             },
@@ -60,32 +60,30 @@ class ExtrusionTests(unittest.TestCase):
 
     def test_area_height_volume_relationship_and_common_scale(self):
         pairs = {"AAA": (2, 40), "BBB": (4, 40)}
-        countries, report = build_scene(
+        regions, report = build_scene(
             example_layout(), pairs, config={"height_scale": 0.5}
         )
-        a, b = countries
+        a, b = regions
         self.assertAlmostEqual(a["footprint_area"], b["footprint_area"] / 2)
         self.assertAlmostEqual(a["height"], b["height"] * 2)
         self.assertAlmostEqual(a["mesh_volume"], b["mesh_volume"])
         self.assertAlmostEqual(report["volume_scale"], 1)
         # A uniform change of height scale multiplies every volume equally.
         doubled, _ = build_scene(example_layout(), pairs, config={"height_scale": 1})
-        for before, after in zip(countries, doubled):
+        for before, after in zip(regions, doubled):
             self.assertAlmostEqual(after["mesh_volume"], 2 * before["mesh_volume"])
             np.testing.assert_array_equal(
                 before["vertices"][:, :2], after["vertices"][:, :2]
             )
 
     def test_zero_second_quantity_is_a_flat_roof(self):
-        countries, report = build_scene(
-            example_layout(), {"AAA": (2, 0), "BBB": (4, 0)}
-        )
+        regions, report = build_scene(example_layout(), {"AAA": (2, 0), "BBB": (4, 0)})
         self.assertEqual(report["max_height"], 0)
-        for c in countries:
+        for c in regions:
             self.assertEqual(c["mesh_volume"], 0)
             self.assertEqual(c["height"], 0)
             self.assertTrue(np.all(c["vertices"][:, 2] == 0))
-        self.assertEqual(report["zero_height_country_codes"], ["AAA", "BBB"])
+        self.assertEqual(report["zero_height_region_ids"], ["AAA", "BBB"])
 
     def test_saved_layout_requires_matching_denominator_and_coverage(self):
         for pairs in (
@@ -96,7 +94,7 @@ class ExtrusionTests(unittest.TestCase):
             with self.subTest(pairs=pairs), self.assertRaises(ValueError):
                 build_scene(example_layout(), pairs)
         layout = example_layout()
-        layout["countries"][1]["geometry"] = mapping(box(4, 0, 8, 3))
+        layout["regions"][1]["geometry"] = mapping(box(4, 0, 8, 3))
         with self.assertRaisesRegex(ValueError, "not proportional"):
             build_scene(layout, {"AAA": (2, 40), "BBB": (4, 40)})
 
@@ -112,10 +110,10 @@ class ExtrusionTests(unittest.TestCase):
                 "AAA,2,1\nAAA,2,3",
                 "AAA,1e-300,1e300",
             ):
-                path.write_text("country_code,population,gdp\n" + data + "\n")
+                path.write_text("id,population,gdp\n" + data + "\n")
                 with self.subTest(data=data), self.assertRaises(ValueError):
                     read_quantity_pairs(path, "population", "gdp")
-            path.write_text("country_code,population,gdp\nAAA,2,0\nBBB,0,0\n")
+            path.write_text("id,population,gdp\nAAA,2,0\nBBB,0,0\n")
             self.assertEqual(
                 read_quantity_pairs(path, "population", "gdp"),
                 {"AAA": (2, 0), "BBB": (0, 0)},
@@ -131,13 +129,13 @@ class ExtrusionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "values.csv").write_text(
-                "country_code,population,gdp\nFRA,3,30\nDEU,5,100\nESP,2,8\n"
+                "id,population,gdp\nFRA,3,30\nDEU,5,100\nESP,2,8\n"
             )
             (root / "config.json").write_text(
                 json.dumps(
                     {
                         "total_area": 100,
-                        "country_gap": 0.1,
+                        "region_gap": 0.1,
                         "growth_steps": 12,
                         "labels": 3,
                     }
@@ -177,11 +175,9 @@ class ExtrusionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             layout = example_layout()
-            layout["countries"][0]["name"] = "</script><script>alert(1)</script>"
+            layout["regions"][0]["name"] = "</script><script>alert(1)</script>"
             (root / "map.layout.json").write_text(json.dumps(layout))
-            (root / "values.csv").write_text(
-                "country_code,population,gdp\nAAA,2,40\nBBB,4,40\n"
-            )
+            (root / "values.csv").write_text("id,population,gdp\nAAA,2,40\nBBB,4,40\n")
             result = subprocess.run(
                 [
                     sys.executable,

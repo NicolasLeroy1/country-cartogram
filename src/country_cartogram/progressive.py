@@ -1,4 +1,4 @@
-"""Geographic geometry interpolation used by the rigid-body growth engine."""
+"""Planar geometry interpolation used by the rigid-body growth engine."""
 
 from __future__ import annotations
 import math
@@ -16,8 +16,8 @@ class GrowthShapes:
         self.target_areas = np.array([g.area for g in final_geometries])
         self.final_scales = np.array([m["scale_factor"] for m in metadata])
         self.source_areas = self.target_areas / self.final_scales**2
-        self.geographic_scale = math.sqrt(total_area / self.source_areas.sum())
-        self.initial_areas = self.source_areas * self.geographic_scale**2
+        self.map_scale = math.sqrt(total_area / self.source_areas.sum())
+        self.initial_areas = self.source_areas * self.map_scale**2
         self.final_geometries = final_geometries
         self.parts = []
         for geometry, detail in zip(final_geometries, metadata):
@@ -35,7 +35,7 @@ class GrowthShapes:
             self.parts.append(parts)
 
     @classmethod
-    def from_previous(cls, final_geometries, metadata, initial_areas, geographic_scale):
+    def from_previous(cls, final_geometries, metadata, initial_areas, map_scale):
         """Continue from compacted shapes; never unfold islands back to geography."""
         obj = cls.__new__(cls)
         obj.final_geometries = final_geometries
@@ -43,7 +43,7 @@ class GrowthShapes:
         obj.initial_areas = np.asarray(initial_areas, dtype=float)
         obj.final_scales = np.array([m["scale_factor"] for m in metadata])
         obj.source_areas = obj.target_areas / obj.final_scales**2
-        obj.geographic_scale = geographic_scale
+        obj.map_scale = map_scale
         obj.parts = []
         for geometry, detail, factor in zip(
             final_geometries, metadata, obj.final_scales
@@ -67,9 +67,9 @@ class GrowthShapes:
         for i, parts in enumerate(self.parts):
             factor = factors[i]
             pieces = []
-            for outline, geographic_offset, final_offset in parts:
+            for outline, source_offset, final_offset in parts:
                 offset = (
-                    (1 - progress) * geographic_offset * self.final_scales[i]
+                    (1 - progress) * source_offset * self.final_scales[i]
                     + progress * final_offset
                 ) * factor
                 pieces.append(

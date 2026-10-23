@@ -84,7 +84,7 @@ def write_document(payload, path, *, html_js="inline"):
     payload = {**payload, "hasEstimates": has_estimates}
     first_statuses = payload.get("valueStatuses", {}).get(
         str(payload.get("frames", [{"year": ""}])[0]["year"]),
-        ["observed"] * len(payload["countries"]),
+        ["observed"] * len(payload["regions"]),
     )
     data = base64.b64encode(
         gzip.compress(
@@ -100,7 +100,7 @@ def write_document(payload, path, *, html_js="inline"):
         '<tr><th scope="row">'
         + escape(c["name"])
         + "</th><td>"
-        + escape(c["code"])
+        + escape(c["id"])
         + "</td>"
         + "".join(
             f"<td>{v:,.6g}</td>" for v in payload["observations"][0][i][: len(labels)]
@@ -111,7 +111,7 @@ def write_document(payload, path, *, html_js="inline"):
             else ""
         )
         + "</tr>"
-        for i, c in enumerate(payload["countries"])
+        for i, c in enumerate(payload["regions"])
     )
     html = (WEB / "viewer.html").read_text(encoding="utf-8")
     replacements = {
@@ -174,11 +174,11 @@ def write_document(payload, path, *, html_js="inline"):
     Path(path).write_text(html, encoding="utf-8")
 
 
-def write_static_viewer(countries, report, path, *, html_js="inline"):
+def write_static_viewer(regions, report, path, *, html_js="inline"):
     from .extrusion import extrude_roof
 
     items, transforms = [], []
-    for c in countries:
+    for c in regions:
         vertices = c["vertices"].copy()
         center = (vertices[:, :2].min(axis=0) + vertices[:, :2].max(axis=0)) / 2
         vertices[:, :2] -= center
@@ -191,25 +191,25 @@ def write_static_viewer(countries, report, path, *, html_js="inline"):
             vertices, faces, roofs = extrude_roof(vertices[:, :2], c["faces"], 1.0)
         items.append(
             {
-                "code": c["country_code"],
+                "id": c["id"],
                 "name": c["name"],
-                "cluster": c["cluster"],
+                "group": c["group"],
                 "color": c["color"],
                 **mesh_payload(vertices, faces, roofs),
             }
         )
         transforms.append([*center, 1.0, c["height"]])
     payload = {
-        "countries": items,
+        "regions": items,
         "transforms": binary([transforms], "<f4"),
         "frameCount": 1,
         "frames": [{"year": "", "phase": "settled", "progress": 1}],
         "endpoints": [0],
         "observations": [
-            [[c["area_value"], c["ratio"], c["volume_value"]] for c in countries]
+            [[c["area_value"], c["ratio"], c["volume_value"]] for c in regions]
         ],
-        "valueStatuses": {"": [c["value_status"] for c in countries]},
-        "valueNotes": {"": [c["value_note"] for c in countries]},
+        "valueStatuses": {"": [c["value_status"] for c in regions]},
+        "valueNotes": {"": [c["value_note"] for c in regions]},
         "config": report["config"],
         "bounds": report["extent"],
         "maxHeight": report["max_height"],
@@ -240,7 +240,7 @@ def write_timeline_viewer(
     value_statuses=None,
     value_notes=None,
 ):
-    from .configuration import country_color
+    from .configuration import region_color
     from .extrusion import DEFAULTS_3D, audit_mesh, extrude_polygon
 
     cfg = {
@@ -253,21 +253,21 @@ def write_timeline_viewer(
         cfg.update(
             area_label=config["value_label"], height_label="Flat map", volume_label="—"
         )
-    countries, local_bounds, base_areas = [], [], []
+    regions, local_bounds, base_areas = [], [], []
     max_volume_error = 0.0
-    for row in base["countries"]:
+    for row in base["regions"]:
         local = translate(shape(row["geometry"]), *-np.asarray(row["position"]))
         base_areas.append(local.area)
         local_bounds.append(local.bounds)
         vertices, faces, roofs = extrude_polygon(local, 1.0)
         audit = audit_mesh(vertices, faces, roofs, local, 1.0)
         max_volume_error = max(max_volume_error, audit["mesh_relative_volume_error"])
-        countries.append(
+        regions.append(
             {
-                "code": row["country_code"],
+                "id": row["id"],
                 "name": row["name"],
-                "cluster": row["cluster"],
-                "color": country_color({**row, "value_status": "observed"}, config),
+                "group": row["group"],
+                "color": region_color({**row, "value_status": "observed"}, config),
                 **mesh_payload(vertices, faces, roofs),
             }
         )
@@ -301,7 +301,7 @@ def write_timeline_viewer(
             "Timeline transforms overflow; change quantity units or height_scale"
         )
     payload = {
-        "countries": countries,
+        "regions": regions,
         "transforms": binary(transforms, "<f4"),
         "frameCount": len(frames),
         "frames": [
@@ -326,18 +326,16 @@ def write_timeline_viewer(
         "renderer": "threejs",
         "threejs_version": THREE_VERSION,
         "height_scale": height_scale,
-        "geometry_count": len(countries),
+        "geometry_count": len(regions),
         "mesh_triangle_count": sum(
-            len(base64.b64decode(c["faces"])) // c["indexBytes"] // 3 for c in countries
+            len(base64.b64decode(c["faces"])) // c["indexBytes"] // 3 for c in regions
         ),
         "max_unit_mesh_volume_error": max_volume_error,
-        "max_display_relative_area_error": max(
-            c["displayAreaError"] for c in countries
-        ),
+        "max_display_relative_area_error": max(c["displayAreaError"] for c in regions),
         "max_display_relative_volume_error": max(
-            c["displayVolumeError"] for c in countries
+            c["displayVolumeError"] for c in regions
         ),
         "relative_error_budget": 0.02,
-        "frame_storage": "gzip + float32 transforms; one mesh per country",
+        "frame_storage": "gzip + float32 transforms; one mesh per region",
         "display_interpolation": "Continuous positions and areas between captured states; calendar pacing independent of solver frame count",
     }

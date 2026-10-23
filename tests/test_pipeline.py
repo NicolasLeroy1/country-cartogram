@@ -4,8 +4,10 @@ from pathlib import Path
 import numpy as np
 from shapely.geometry import box, Polygon, mapping, MultiPolygon
 from shapely.affinity import translate
-from country_cartogram.geometry import prepare_country, pack_rigid
-from country_cartogram.pipeline import read_values, load_config, audit
+from country_cartogram.geometry import prepare_region
+from country_cartogram.pipeline import audit
+from country_cartogram.values import read_values
+from country_cartogram.configuration import load_config
 from country_cartogram.progressive import GrowthShapes
 from country_cartogram.physics import layout_physics
 from country_cartogram.physics import convex_pieces, contact_envelope
@@ -13,11 +15,37 @@ import shapely
 
 
 class GeometryTests(unittest.TestCase):
+    def pack(self, polygons, anchors, gap=0.35):
+        rows = [
+            {"id": str(i), "group": "One", "parent": "", "value": g.area}
+            for i, g in enumerate(polygons)
+        ]
+        metadata = [
+            {
+                "scale_factor": 1.0,
+                "parts": [{"source_center": [0, 0], "offset": [0, 0]}],
+            }
+            for g in polygons
+        ]
+        config = {
+            **load_config(),
+            "total_area": sum(g.area for g in polygons),
+            "region_gap": gap,
+            "anchor_pull": 0,
+            "group_pull": 0,
+            "growth_steps": 4,
+        }
+        _, positions, report, _ = layout_physics(
+            polygons, np.asarray(anchors), rows, metadata, config
+        )
+        self.assertTrue(report["equilibrium_converged"])
+        return positions
+
     def test_containment_collision_and_required_gap(self):
         # A small body wholly inside a large one defeats naive interval overlap.
         polygons = [box(-5, -5, 5, 5), box(-1, -1, 1, 1), box(-0.5, -0.5, 0.5, 0.5)]
         anchors = np.zeros((3, 2))
-        positions, _ = pack_rigid(polygons, anchors, gap=0.7, iterations=30)
+        positions = self.pack(polygons, anchors, gap=0.7)
         placed = [translate(g, *p) for g, p in zip(polygons, positions)]
         self.assertTrue(
             all(
@@ -32,8 +60,8 @@ class GeometryTests(unittest.TestCase):
         main = Polygon([(0, 40), (4, 40), (4, 44), (0, 44)])
         satellite = box(-60, 5, -59, 6)
         source = mapping(MultiPolygon([main, satellite]))
-        a, anchor, meta = prepare_country(source, 120, simplify=0, min_part_fraction=0)
-        b, _, _ = prepare_country(source, 480, simplify=0, min_part_fraction=0)
+        a, anchor, meta = prepare_region(source, 120, simplify=0, min_part_fraction=0)
+        b, _, _ = prepare_region(source, 480, simplify=0, min_part_fraction=0)
         self.assertAlmostEqual(a.area, 120, places=8)
         self.assertAlmostEqual(b.area / a.area, 4, places=8)
         self.assertAlmostEqual(b.geoms[0].length / a.geoms[0].length, 2, places=8)
@@ -56,10 +84,10 @@ class GeometryTests(unittest.TestCase):
         shape_with_hole = Polygon(
             [(0, 0), (8, 0), (8, 8), (0, 8)], [[(2, 2), (2, 3), (3, 3), (3, 2)]]
         )
-        g, _, _ = prepare_country(mapping(shape_with_hole), 80, simplify=0)
+        g, _, _ = prepare_region(mapping(shape_with_hole), 80, simplify=0)
         self.assertEqual(len(g.geoms[0].interiors), 1)
-        a, _ = pack_rigid([g, g], [[0, 0], [1, 1]], iterations=20)
-        b, _ = pack_rigid([g, g], [[0, 0], [1, 1]], iterations=20)
+        a = self.pack([g, g], [[0, 0], [1, 1]])
+        b = self.pack([g, g], [[0, 0], [1, 1]])
         np.testing.assert_array_equal(a, b)
 
 
@@ -68,7 +96,7 @@ class InputTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "values.csv"
         self.catalog = {
-            code: {"name": code, "cluster": "Example", "parent": ""}
+            code: {"name": code, "group": "Example", "parent": ""}
             for code in ("AAA", "BBB")
         }
 
@@ -82,22 +110,22 @@ class InputTests(unittest.TestCase):
     def test_invalid_values_and_keys(self):
         for bad in ("", "-1", "nan", "inf", "words"):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
-                self.read(f"country_code,value\nAAA,{bad}\n")
+                self.read(f"id,value\nAAA,{bad}\n")
         for bad in ("XXX,2", "AAA,1\nAAA,2"):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
-                self.read("country_code,value\n" + bad + "\n")
+                self.read("id,value\n" + bad + "\n")
 
     def test_missing_is_distinct_from_zero(self):
-        rows, report = self.read("country_code,value\nAAA,2\n")
-        self.assertEqual(report["omitted_country_codes"], ["BBB"])
-        self.assertEqual(report["zero_country_codes"], [])
-        rows, report = self.read("country_code,value\nAAA,2\nBBB,0\n")
-        self.assertEqual(report["omitted_country_codes"], [])
-        self.assertEqual(report["zero_country_codes"], ["BBB"])
+        rows, report = self.read("id,value\nAAA,2\n")
+        self.assertEqual(report["omitted_region_ids"], ["BBB"])
+        self.assertEqual(report["zero_region_ids"], [])
+        rows, report = self.read("id,value\nAAA,2\nBBB,0\n")
+        self.assertEqual(report["omitted_region_ids"], [])
+        self.assertEqual(report["zero_region_ids"], ["BBB"])
 
     def test_parent_cycle_rejected(self):
         with self.assertRaises(ValueError):
-            self.read("country_code,value,parent\nAAA,2,BBB\nBBB,3,AAA\n")
+            self.read("id,value,parent\nAAA,2,BBB\nBBB,3,AAA\n")
 
 
 class GrowthTests(unittest.TestCase):
@@ -114,7 +142,7 @@ class GrowthTests(unittest.TestCase):
                     self.assertTrue(envelope.exterior.is_ccw)
                     self.assertLess(needed.difference(envelope).area, 1e-10)
 
-    def test_cross_cluster_contacts_separate_groups_without_widening_internal_gaps(
+    def test_cross_group_contacts_separate_groups_without_widening_internal_gaps(
         self,
     ):
         geometries = [MultiPolygon([box(-0.5, -0.5, 0.5, 0.5)]) for _ in range(3)]
@@ -126,29 +154,29 @@ class GrowthTests(unittest.TestCase):
             for _ in geometries
         ]
         rows = [
-            {"country_code": code, "cluster": group, "value": 1, "parent": ""}
+            {"id": code, "group": group, "value": 1, "parent": ""}
             for code, group in [("AAA", "West"), ("BBB", "West"), ("CCC", "East")]
         ]
         config = {
             **load_config(),
             "total_area": 3,
-            "country_gap": 0.1,
-            "cluster_gap": 0.8,
-            "geographic_pull": 0.1,
-            "cluster_pull": 0,
+            "region_gap": 0.1,
+            "group_gap": 0.8,
+            "anchor_pull": 0.1,
+            "group_pull": 0,
             "growth_steps": 4,
         }
         placed, positions, report, _ = layout_physics(
             geometries, np.array([[0, 0], [0.6, 0], [1.2, 0]]), rows, metadata, config
         )
         checked = audit(placed, rows, config)
-        self.assertGreater(report["cluster_fixture_count"], 0)
-        self.assertGreaterEqual(checked["minimum_cluster_distance"], 0.8 - 1e-5)
+        self.assertGreater(report["group_fixture_count"], 0)
+        self.assertGreaterEqual(checked["minimum_group_distance"], 0.8 - 1e-5)
         self.assertLess(placed[0].distance(placed[1]), 0.8)
         np.testing.assert_allclose(np.mean(positions, axis=0), [0.6, 0], atol=1e-8)
         # Independent checks must reject a map with a sufficient country gap
         # but too little separation across groups.
-        with self.assertRaisesRegex(RuntimeError, "cluster gap"):
+        with self.assertRaisesRegex(RuntimeError, "group gap"):
             audit(
                 [box(0, 0, 1, 1), box(1.2, 0, 2.2, 1), box(2.4, 0, 3.4, 1)],
                 rows,
@@ -170,7 +198,7 @@ class GrowthTests(unittest.TestCase):
             for _ in shapes
         ]
         rows = [
-            {"country_code": code, "cluster": "Example", "value": g.area, "parent": ""}
+            {"id": code, "group": "Example", "value": g.area, "parent": ""}
             for code, g in zip(("HOST", "ENCLAVE"), shapes)
         ]
         config = load_config()
@@ -182,7 +210,7 @@ class GrowthTests(unittest.TestCase):
         )
         self.assertTrue(info["equilibrium_converged"])
         self.assertGreaterEqual(
-            placed[0].distance(placed[1]), config["country_gap"] - 1e-5
+            placed[0].distance(placed[1]), config["region_gap"] - 1e-5
         )
         np.testing.assert_allclose([g.area for g in placed], [96, 1], atol=1e-10)
         np.testing.assert_allclose(
@@ -202,7 +230,7 @@ class GrowthTests(unittest.TestCase):
 
     def test_geographic_start_and_exact_end_sizes(self):
         source = mapping(MultiPolygon([box(0, 40, 4, 44), box(-60, 5, -59, 6)]))
-        geometry, anchor, detail = prepare_country(
+        geometry, anchor, detail = prepare_region(
             source, 120, simplify=0, min_part_fraction=0
         )
         shapes = GrowthShapes([geometry], [detail], 120)
@@ -210,21 +238,21 @@ class GrowthTests(unittest.TestCase):
         expected_offset = (
             np.array(detail["parts"][1]["source_center"])
             - np.array(detail["parts"][0]["source_center"])
-        ) * shapes.geographic_scale
+        ) * shapes.map_scale
         actual_offset = np.array(start.geoms[1].centroid.coords[0]) - np.array(
             start.geoms[0].centroid.coords[0]
         )
         np.testing.assert_allclose(actual_offset, expected_offset, atol=1e-9)
         self.assertTrue(shapes.at(1)[0].equals_exact(geometry, 1e-10))
 
-    def test_cluster_attraction_active_during_growth(self):
+    def test_group_attraction_active_during_growth(self):
         rows = [
-            {"country_code": "AAA", "cluster": "One"},
-            {"country_code": "BBB", "cluster": "One"},
+            {"id": "AAA", "group": "One"},
+            {"id": "BBB", "group": "One"},
         ]
         geometries, anchors, metadata = [], [], []
         for source in [mapping(box(-20, 10, -19, 11)), mapping(box(20, 10, 21, 11))]:
-            g, a, m = prepare_country(source, 1, simplify=0)
+            g, a, m = prepare_region(source, 1, simplify=0)
             geometries.append(g)
             anchors.append(a)
             metadata.append(m)
@@ -234,9 +262,9 @@ class GrowthTests(unittest.TestCase):
             growth_steps=4,
             relax_per_step=1,
             settle_steps=1,
-            geographic_pull=0,
-            cluster_pull=0.01,
-            country_gap=0.1,
+            anchor_pull=0,
+            group_pull=0.01,
+            region_gap=0.1,
         )
         placed, positions, report, frames = layout_physics(
             geometries, np.array(anchors), rows, metadata, config, capture=True

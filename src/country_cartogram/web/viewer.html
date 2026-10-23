@@ -41,14 +41,14 @@
               min="10"
               max="100"
               step="5"
-              aria-label="Country opacity"
+              aria-label="Region opacity"
             /><output id="opacity-value">40%</output></label
           >
           <input
             id="search"
             type="search"
-            placeholder="Find country…"
-            aria-label="Find country"
+            placeholder="Find region…"
+            aria-label="Find region"
           />
         </div>
         <div class="viewport" id="viewport">
@@ -70,7 +70,7 @@
             <span id="range-start"></span><span id="range-end"></span>
           </div>
         </div>
-        <div id="legend" class="legend" aria-label="Country groups"></div>
+        <div id="legend" class="legend" aria-label="Region groups"></div>
         <p id="estimate-key" class="hint" hidden>
           Grey = estimated value · hover for the method.
         </p>
@@ -83,16 +83,16 @@
       <p class="hint" id="height-note" hidden>
         Experimental 3D: height shows second ÷ first. Small footprints with
         large ratios can form tall, thin columns that are hard to compare. Use
-        Top view for areas and Country values for the quantities.
+        Top view for areas and Region values for the quantities.
       </p>
       <details>
-        <summary>Country values <span id="table-period"></span></summary>
+        <summary>Region values <span id="table-period"></span></summary>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th scope="col">Country</th>
-                <th scope="col">Code</th>
+                <th scope="col">Region</th>
+                <th scope="col">ID</th>
                 @@HEADINGS@@
               </tr>
             </thead>
@@ -106,7 +106,7 @@
         @@SOURCE@@<br />Simplified boundaries; values come from the input data.
       </footer>
       <noscript
-        >Enable JavaScript for the interactive map. Country values remain
+        >Enable JavaScript for the interactive map. Region values remain
         available in the table.</noscript
       >
     </main>

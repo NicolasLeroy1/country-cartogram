@@ -10,12 +10,12 @@
   "source_last_updated": "2026-10-08",
   "snapshot": "gdp-1985-2024.source.json.gz",
   "snapshot_sha256": "e3c503a7d815508f7d5f1eba27e10c17cd843d4acbb449855c446ac78986ad85",
-  "csv_sha256": "30452bbcd4a90f4dd5268cfee536cccd6aad225fb4652811ff6b0c4503384ef0",
+  "csv_sha256": "5bc5178fe346463649155632df847777001fc765a77dd7d2a0a392bb2c8d649a",
   "period_start": 1985,
   "period_end": 2024,
   "period_count": 40,
-  "country_count": 209,
-  "included_country_codes": [
+  "region_count": 209,
+  "included_region_ids": [
     "ABW",
     "AFG",
     "AGO",
@@ -226,7 +226,7 @@
     "ZMB",
     "ZWE"
   ],
-  "country_code_aliases": {
+  "id_aliases": {
     "XKX": "KOS"
   },
   "normalization": "shares of the included cohort's GDP, not total world GDP",
@@ -277,122 +277,122 @@
   },
   "excluded": [
     {
-      "country_code": "AIA",
+      "id": "AIA",
       "name": "Anguilla",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "ALA",
+      "id": "ALA",
       "name": "Åland",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "ATC",
+      "id": "ATC",
       "name": "Ashmore and Cartier Islands",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "BLM",
+      "id": "BLM",
       "name": "Saint Barthélemy",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "COK",
+      "id": "COK",
       "name": "Cook Islands",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "CYN",
+      "id": "CYN",
       "name": "Turkish Republic of Northern Cyprus",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "ESH",
+      "id": "ESH",
       "name": "Western Sahara",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "FLK",
+      "id": "FLK",
       "name": "Falkland Islands",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "GGY",
+      "id": "GGY",
       "name": "Guernsey",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "IOA",
+      "id": "IOA",
       "name": "Australian Indian Ocean Territories",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "JEY",
+      "id": "JEY",
       "name": "Jersey",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "KAS",
+      "id": "KAS",
       "name": "Siachen Glacier",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "MAF",
+      "id": "MAF",
       "name": "Saint Martin",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "MSR",
+      "id": "MSR",
       "name": "Montserrat",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "NFK",
+      "id": "NFK",
       "name": "Norfolk Island",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "NIU",
+      "id": "NIU",
       "name": "Niue",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "PCN",
+      "id": "PCN",
       "name": "Pitcairn Islands",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "PRK",
+      "id": "PRK",
       "name": "North Korea",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "SOL",
+      "id": "SOL",
       "name": "Somaliland",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "SPM",
+      "id": "SPM",
       "name": "Saint Pierre and Miquelon",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "TWN",
+      "id": "TWN",
       "name": "Taiwan",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "VAT",
+      "id": "VAT",
       "name": "Vatican City",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "VGB",
+      "id": "VGB",
       "name": "British Virgin Islands",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     },
     {
-      "country_code": "WLF",
+      "id": "WLF",
       "name": "Wallis and Futuna",
       "reason": "No known positive, non-forecast GDP in 1985–2024"
     }

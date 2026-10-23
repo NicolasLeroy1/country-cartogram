@@ -1,4 +1,4 @@
-year,country_code,value,name,cluster,parent,value_status,value_note
+year,id,value,name,group,parent,value_status,value_note
 1985,ABW,967924669.426005,Aruba,Europe,NLD,carried_backward,1986 value held backward
 1985,AFG,6206547590.07403,Afghanistan,Asia,,carried_backward,2000 value held backward
 1985,AGO,28327988922.9414,Angola,Africa,,observed,

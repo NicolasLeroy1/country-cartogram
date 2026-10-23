@@ -1,26 +1,37 @@
 {
   "schema_version": 1,
   "normalization": "fixed",
+  "map": {
+    "label": "Natural Earth boundaries",
+    "source_crs": "EPSG:4326",
+    "projection": "EPSG:8857"
+  },
   "fixed_area_scale": 1.3029230342656433e-06,
-  "input_sha256": "39578cbe1da295b836a363ff8fe8fbda6b607069eb3d39e21fe741b9930eadea",
+  "input_sha256": "de4fdfcfb9ac8ed384846a8323eb768b56ed60f63a5ecdf8418368fb24fe48a4",
   "time_column": "year",
   "value_column": "population",
   "volume_column": "gdp_usd",
+  "missing_values": "error",
+  "estimated_counts": {
+    "2020": 0,
+    "2021": 0,
+    "2022": 0
+  },
   "viewer": {
     "renderer": "threejs",
     "threejs_version": "0.186.1",
-    "height_scale": 0.00033017185563072543,
+    "height_scale": 0.0003245479956184426,
     "geometry_count": 231,
     "mesh_triangle_count": 89112,
-    "max_unit_mesh_volume_error": 2.6645352591003757e-15,
+    "max_unit_mesh_volume_error": 1.5543122344752192e-15,
     "max_display_relative_area_error": 6.641249061800636e-08,
     "max_display_relative_volume_error": 6.641249039596175e-08,
     "relative_error_budget": 0.02,
-    "frame_storage": "gzip + float32 transforms; one mesh per country",
-    "display_interpolation": "Captured solver states only; no geometric tweening"
+    "frame_storage": "gzip + float32 transforms; one mesh per region",
+    "display_interpolation": "Continuous positions and areas between captured states; calendar pacing independent of solver frame count"
   },
-  "country_count": 231,
-  "frame_count": 19,
+  "region_count": 231,
+  "frame_count": 15,
   "period_count": 3,
   "periods": [
     {
@@ -29,109 +40,110 @@
       "area_scale": 1.3029230342656433e-06,
       "layout": "2020.layout.json",
       "packing": {
-        "method": "geographic_growth_rigid_body_physics",
+        "method": "growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
-        "convex_piece_count": 694,
+        "convex_piece_count": 1388,
+        "group_fixture_count": 694,
         "cached_collision_part_count": 0,
-        "collision_vertex_count": 6878,
-        "fixture_build_seconds": 0.06657539599109441,
+        "collision_vertex_count": 19286,
+        "fixture_build_seconds": 0.13597696599026676,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
         "maximum_final_collision_outline_error": 15.505613793089896,
         "growth_steps": 80,
         "relax_per_step": 20,
-        "settling_iterations": 4657,
+        "settling_iterations": 4825,
         "equilibrium_converged": true,
-        "max_final_step_movement": 0.0019407027786716238,
+        "max_final_step_movement": 0.001232017307545767,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
-        "initial_geographic_scale": 0.8642730675220464,
+        "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.007250000000000001,
-            "max_step_movement": 0.11324689639444666
+            "max_step_movement": 0.1134859844322894
           },
           {
             "progress": 0.028000000000000004,
-            "max_step_movement": 0.14468510227951614
+            "max_step_movement": 0.14499721127738055
           },
           {
             "progress": 0.06075,
-            "max_step_movement": 0.1480808389500725
+            "max_step_movement": 0.1479568841494959
           },
           {
             "progress": 0.10400000000000002,
-            "max_step_movement": 0.14213136614432265
+            "max_step_movement": 0.14901219649003072
           },
           {
             "progress": 0.15625,
-            "max_step_movement": 0.13318260641252322
+            "max_step_movement": 0.1363046255845161
           },
           {
             "progress": 0.216,
-            "max_step_movement": 0.12368826392514379
+            "max_step_movement": 0.12777656238892937
           },
           {
             "progress": 0.28174999999999994,
-            "max_step_movement": 0.11946046445988863
+            "max_step_movement": 0.08006388663140569
           },
           {
             "progress": 0.3520000000000001,
-            "max_step_movement": 0.08551936417981984
+            "max_step_movement": 0.07647806137273659
           },
           {
             "progress": 0.4252500000000001,
-            "max_step_movement": 0.08888190628621007
+            "max_step_movement": 0.20957778209170896
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.09601831414699805
+            "max_step_movement": 0.18202731301019295
           },
           {
             "progress": 0.5747500000000001,
-            "max_step_movement": 0.10103989713207157
+            "max_step_movement": 0.24374351516417414
           },
           {
             "progress": 0.648,
-            "max_step_movement": 0.09441073724561638
+            "max_step_movement": 0.22034635719026827
           },
           {
             "progress": 0.71825,
-            "max_step_movement": 0.10990404858572493
+            "max_step_movement": 0.1117570743136791
           },
           {
             "progress": 0.7839999999999999,
-            "max_step_movement": 0.11513658296279967
+            "max_step_movement": 0.29340820712445925
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.25090093422403004
+            "max_step_movement": 0.4518462738709327
           },
           {
             "progress": 0.8960000000000001,
-            "max_step_movement": 0.4664491424093477
+            "max_step_movement": 0.5468544708760809
           },
           {
             "progress": 0.9392499999999999,
-            "max_step_movement": 0.45847257951998543
+            "max_step_movement": 0.8737756715675569
           },
           {
             "progress": 0.972,
-            "max_step_movement": 0.3675402318399175
+            "max_step_movement": 0.3032846295164461
           },
           {
             "progress": 0.99275,
-            "max_step_movement": 0.25981007943484663
+            "max_step_movement": 0.085665290581518
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.15824591736812976
+            "max_step_movement": 0.1303824793359426
           }
         ],
-        "elapsed_seconds": 8.20064570500108,
-        "mean_displacement_from_start": 23.247436460911022,
-        "max_displacement_from_start": 245.64565759367156
+        "elapsed_seconds": 20.403145468997536,
+        "mean_displacement_from_start": 24.028144372562224,
+        "max_displacement_from_start": 253.37722156727168
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -140,8 +152,9 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 2.355893258254582e-13,
-      "minimum_country_distance": 0.4189771809836422,
+      "max_relative_area_error": 2.3070434451710753e-13,
+      "minimum_region_distance": 0.21949827609079453,
+      "minimum_group_distance": 3.6386511766632634,
       "overlap_pairs": [],
       "continuation": null
     },
@@ -154,42 +167,43 @@
         "method": "continued_growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
-        "convex_piece_count": 694,
+        "convex_piece_count": 1388,
+        "group_fixture_count": 694,
         "cached_collision_part_count": 694,
-        "collision_vertex_count": 6878,
-        "fixture_build_seconds": 0.014402171000256203,
+        "collision_vertex_count": 19286,
+        "fixture_build_seconds": 0.07067907298915088,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
         "maximum_final_collision_outline_error": 15.655090678766717,
         "growth_steps": 4,
         "relax_per_step": 20,
-        "settling_iterations": 1195,
+        "settling_iterations": 415,
         "equilibrium_converged": true,
-        "max_final_step_movement": 0.001880025535424659,
+        "max_final_step_movement": 0.0016037793398905906,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
-        "initial_geographic_scale": 0.8642730675220464,
+        "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.15625,
-            "max_step_movement": 0.008873859136958144
+            "max_step_movement": 0.028125112594100526
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.010477563427479386
+            "max_step_movement": 0.0561033426849973
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.016866045410684805
+            "max_step_movement": 0.00912130170995402
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.008291697963733552
+            "max_step_movement": 0.011844505478908312
           }
         ],
-        "elapsed_seconds": 1.63284133101115,
-        "mean_displacement_from_start": 0.5888430164746496,
-        "max_displacement_from_start": 4.3005550004178765
+        "elapsed_seconds": 1.653246539994143,
+        "mean_displacement_from_start": 0.3595635265129336,
+        "max_displacement_from_start": 1.0113608944072099
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -198,12 +212,13 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 2.2470914018413168e-13,
-      "minimum_country_distance": 0.4189999999999961,
+      "max_relative_area_error": 5.127009927718973e-13,
+      "minimum_region_distance": 0.21905831462090156,
+      "minimum_group_distance": 3.6370113612865187,
       "overlap_pairs": [],
       "continuation": {
-        "initial_layout_sha256": "f8b1e336f1b65471bf68e3809b6ca1a80e8316a39d0cc8aaf1d096f7515bd542",
-        "reused_country_count": 231
+        "initial_layout_sha256": "b8a9b0076d166a1104f7493b1dac855ffbd171b47862370d62d6d0f02a1b71e7",
+        "reused_region_count": 231
       }
     },
     {
@@ -215,42 +230,43 @@
         "method": "continued_growth_rigid_body_physics",
         "engine": "Pymunk/Chipmunk",
         "engine_version": "7.3.1",
-        "convex_piece_count": 694,
+        "convex_piece_count": 1388,
+        "group_fixture_count": 694,
         "cached_collision_part_count": 694,
-        "collision_vertex_count": 6878,
-        "fixture_build_seconds": 0.014109721989370883,
+        "collision_vertex_count": 19286,
+        "fixture_build_seconds": 0.07169639298808761,
         "collision_mode": "hull",
         "collision_tolerance": 0.12,
-        "maximum_final_collision_outline_error": 15.806008548309975,
+        "maximum_final_collision_outline_error": 15.80600854830998,
         "growth_steps": 4,
         "relax_per_step": 20,
-        "settling_iterations": 239,
+        "settling_iterations": 537,
         "equilibrium_converged": true,
-        "max_final_step_movement": 0.0017749699744485966,
+        "max_final_step_movement": 0.0019996805407604032,
         "position_tolerance": 0.002,
         "physics_dt": 0.04,
-        "initial_geographic_scale": 0.8642730675220464,
+        "initial_map_scale": 0.8642730675220464,
         "growth_trace": [
           {
             "progress": 0.15625,
-            "max_step_movement": 0.003802972491160021
+            "max_step_movement": 0.02646310443189619
           },
           {
             "progress": 0.5,
-            "max_step_movement": 0.007953847682044348
+            "max_step_movement": 0.010439206179789823
           },
           {
             "progress": 0.84375,
-            "max_step_movement": 0.01593794279803602
+            "max_step_movement": 0.16801116142445874
           },
           {
             "progress": 1.0,
-            "max_step_movement": 0.015824990514502434
+            "max_step_movement": 0.011881031683609534
           }
         ],
-        "elapsed_seconds": 0.42352378299983684,
-        "mean_displacement_from_start": 0.3349098577608765,
-        "max_displacement_from_start": 1.4078446043422326
+        "elapsed_seconds": 2.0079292449954664,
+        "mean_displacement_from_start": 0.39021249536977176,
+        "max_displacement_from_start": 1.1419012926452161
       },
       "shape_approximation": {
         "stage": "before simulation",
@@ -259,16 +275,17 @@
         "prepared_outline_vertices": 23666,
         "max_relative_symmetric_difference": 0.01999895819699516
       },
-      "max_relative_area_error": 1.596500709410975e-13,
-      "minimum_country_distance": 0.41896490881318277,
+      "max_relative_area_error": 4.247713292215849e-13,
+      "minimum_region_distance": 0.2190534299127968,
+      "minimum_group_distance": 3.63447907288493,
       "overlap_pairs": [],
       "continuation": {
-        "initial_layout_sha256": "2fe20887c61282e14c9971d6e270d2d4b55c14d6dc5866c0ef27849f5c333b24",
-        "reused_country_count": 231
+        "initial_layout_sha256": "0337a14c791868f9b65ea942c51e508aabea1f1c0088aec2504e23795d0241d4",
+        "reused_region_count": 231
       }
     }
   ],
   "initial_layout_sha256": null,
-  "html_bytes": 1815651,
-  "note": "Intermediate frames are real solver states, not additional observations; endpoint maps are audited."
+  "html_bytes": 1809614,
+  "note": "Annual endpoint maps use prepared inputs, including flagged estimates. Playback follows captured solver states between endpoints; those intermediate states are not extra observations."
 }

@@ -1,0 +1,11 @@
+{
+  "title": "An example realm",
+  "value_label": "Population",
+  "source_note": "Invented regions and values in local map coordinates.",
+  "projection": "local",
+  "total_area": 100,
+  "region_gap": 0.1,
+  "group_gap": 0.5,
+  "labels": 3,
+  "decimals": 0
+}

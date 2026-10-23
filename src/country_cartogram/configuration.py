@@ -6,10 +6,12 @@ import json
 import math
 from pathlib import Path
 from matplotlib.colors import to_rgb, to_hex
+from .maps import MAP_DEFAULTS, Projection
 
 DEFAULTS = {
-    "title": "Country cartogram",
-    "subtitle": "Country area represents quantity; color represents cluster",
+    "title": "Cartogram",
+    **MAP_DEFAULTS,
+    "subtitle": "Area represents quantity; color represents group",
     "source_note": "User-supplied quantities",
     "value_label": "Quantity",
     "prefix": "",
@@ -17,12 +19,10 @@ DEFAULTS = {
     "suffix": "",
     "decimals": 1,
     "total_area": 10000,
-    "country_gap": 0.2,
-    "cluster_gap": 3.6,
-    "geographic_spread": 0.72,
-    "geographic_pull": 0.002,
-    "cluster_pull": 0.006,
-    "layout_mode": "growth",
+    "region_gap": 0.2,
+    "group_gap": 3.6,
+    "anchor_pull": 0.002,
+    "group_pull": 0.006,
     "growth_steps": 80,
     "relax_per_step": 20,
     "settle_steps": 6000,
@@ -32,7 +32,6 @@ DEFAULTS = {
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
-    "iterations": 250,
     "territory_distance": 12,
     "parent_pull": 0.04,
     "satellite_distance": 1.4,
@@ -41,9 +40,9 @@ DEFAULTS = {
     "simplify": 0.0015,
     "shape_error": 0.02,
     "labels": 14,
-    "label_countries": [],
+    "label_regions": [],
     "label_offsets": {},
-    "label_aliases": {"GBR": "UK"},
+    "label_aliases": {},
     "background": "#edf8fa",
     "ink": "#10243a",
     "colors": {
@@ -54,33 +53,26 @@ DEFAULTS = {
         "Asia": "#e55261",
         "Oceania": "#f29b45",
     },
-    "cluster_anchors": {
-        "North America": [-105, 42],
-        "South America": [-62, -18],
-        "Europe": [12, 52],
-        "Africa": [18, 0],
-        "Asia": [105, 32],
-        "Oceania": [140, -28],
-    },
 }
 
 
-def load_config(path=None):
+def load_config(path=None, *, source_crs=None, projection=None):
     config = json.loads(json.dumps(DEFAULTS))
     if path:
         supplied = json.loads(Path(path).read_text())
+        if not isinstance(supplied, dict):
+            raise ValueError("Configuration must be a JSON object")
         unknown = set(supplied) - set(config)
         if unknown:
             raise ValueError(f"Unknown configuration keys: {sorted(unknown)}")
         for key, value in supplied.items():
-            if key in ("colors", "cluster_anchors"):
+            if key == "colors":
                 config[key].update(value)
             else:
                 config[key] = value
     for key in (
         "total_area",
         "divisor",
-        "geographic_spread",
         "satellite_distance",
         "territory_distance",
         "position_tolerance",
@@ -93,10 +85,10 @@ def load_config(path=None):
         ):
             raise ValueError(f"{key} must be finite and positive")
     for key in (
-        "country_gap",
-        "cluster_gap",
-        "geographic_pull",
-        "cluster_pull",
+        "region_gap",
+        "group_gap",
+        "anchor_pull",
+        "group_pull",
         "parent_pull",
         "simplify",
         "min_part_fraction",
@@ -109,7 +101,6 @@ def load_config(path=None):
         ):
             raise ValueError(f"{key} must be finite and non-negative")
     for key in (
-        "iterations",
         "max_parts",
         "labels",
         "decimals",
@@ -122,8 +113,6 @@ def load_config(path=None):
             0 if key in ("labels", "decimals") else 1
         ):
             raise ValueError(f"{key} has an invalid integer value")
-    if config["layout_mode"] not in ("growth", "legacy"):
-        raise ValueError("layout_mode must be growth or legacy")
     if config["collision_mode"] not in ("hull", "decomposed"):
         raise ValueError("collision_mode must be hull or decomposed")
     if (
@@ -137,14 +126,19 @@ def load_config(path=None):
         raise ValueError("damping and min_part_fraction must be in [0, 1)")
     for color in [config["background"], config["ink"], *config["colors"].values()]:
         to_rgb(color)
+    if source_crs is not None:
+        config["source_crs"] = source_crs
+    if projection is not None:
+        config["projection"] = projection
+    config.update(Projection(config["source_crs"], config["projection"]).settings)
     return config
 
 
-def country_color(row, config):
+def region_color(row, config):
     if row.get("value_status", "observed") != "observed":
         return "#a0a5a9"
-    digest = int(hashlib.sha256(row["country_code"].encode()).hexdigest()[:8], 16)
-    group = row["cluster"]
+    digest = int(hashlib.sha256(row["id"].encode()).hexdigest()[:8], 16)
+    group = row["group"]
     if group in config["colors"]:
         base = to_rgb(config["colors"][group])
     else:

@@ -1,4 +1,4 @@
-"""Rigid-body contact engine for geographic growth cartograms (Pymunk/Chipmunk)."""
+"""Rigid-body contact engine for polygon cartograms (Pymunk/Chipmunk)."""
 
 from __future__ import annotations
 import math
@@ -38,7 +38,7 @@ def contact_envelope(vertices):
     """Convex polygon + square: conservative padding without rounded contacts.
 
     Return support vertices and corner directions separately so resizing scales
-    the country while keeping its contact gap fixed in chart units. Minkowski
+    the region while keeping its contact gap fixed in chart units. Minkowski
     sums keep this topology for every positive uniform scale and padding.
     """
     corners = np.array([[-1, -1], [-1, 1], [1, -1], [1, 1]], dtype=float)
@@ -69,13 +69,13 @@ def layout_physics(
             final_geometries,
             metadata,
             initial_state["areas"],
-            initial_state["geographic_scale"],
+            initial_state["map_scale"],
         )
         anchors = np.asarray(initial_state["anchors"])
         start_positions = np.asarray(initial_state["positions"])
     else:
         growth = GrowthShapes(final_geometries, metadata, config["total_area"])
-        anchors = np.asarray(anchors) * growth.geographic_scale
+        anchors = np.asarray(anchors) * growth.map_scale
         start_positions = anchors
     masses = growth.target_areas
     space = pymunk.Space()
@@ -83,18 +83,19 @@ def layout_physics(
     space.damping = config["damping"]
     space.iterations = config["contact_iterations"]
     space.collision_slop = 0.001
+    # Fully correct penetration during quasi-static resizing. Partial correction
+    # can leave tiny regions closer than the requested gap.
+    space.collision_bias = 0
     bodies, fixtures = [], []
     # A small numerical margin makes the final true-polygon gap at least the
     # requested one despite the engine's contact slop.
-    country_padding = config["country_gap"] / 2 + 0.01
-    cluster_padding = max(config["country_gap"], config["cluster_gap"]) / 2 + 0.01
-    group_bits = {
-        name: 1 << (i + 1)
-        for i, name in enumerate(sorted({r["cluster"] for r in rows}))
+    region_padding = config["region_gap"] / 2 + 0.01
+    group_padding = max(config["region_gap"], config["group_gap"]) / 2 + 0.01
+    group_ids = {
+        name: i + 1 for i, name in enumerate(sorted({r["group"] for r in rows}))
     }
-    group_mask = sum(group_bits.values())
-    separate_clusters = cluster_padding > country_padding and len(group_bits) > 1
-    cluster_fixture_count = 0
+    separate_groups = group_padding > region_padding and len(group_ids) > 1
+    group_fixture_count = 0
     maximum_factors = np.sqrt(
         np.maximum(growth.initial_areas, growth.target_areas) / growth.target_areas
     )
@@ -108,7 +109,7 @@ def layout_physics(
         for part_index, (outline, _, _) in enumerate(parts):
             # A timeline retains the same normalized shapes. Hull fixtures can
             # be rescaled from the first solve without repeating GEOS/decomposition.
-            key = (rows[i]["country_code"], part_index)
+            key = (rows[i]["id"], part_index)
             factor = growth.final_scales[i]
             cached = (
                 collision_cache.get(key)
@@ -143,16 +144,17 @@ def layout_physics(
             # simplification mode needs an additional error allowance.
             for vertices in pieces:
                 support, directions = contact_envelope(vertices)
-                contacts = [(country_padding, pymunk.ShapeFilter(categories=1, mask=1))]
-                if separate_clusters:
-                    bit = group_bits[rows[i]["cluster"]]
+                contacts = [(region_padding, pymunk.ShapeFilter(categories=1, mask=1))]
+                if separate_groups:
                     contacts.append(
                         (
-                            cluster_padding,
-                            pymunk.ShapeFilter(categories=bit, mask=group_mask ^ bit),
+                            group_padding,
+                            pymunk.ShapeFilter(
+                                categories=2, mask=2, group=group_ids[rows[i]["group"]]
+                            ),
                         )
                     )
-                    cluster_fixture_count += 1
+                    group_fixture_count += 1
                 # The wider envelope only collides across groups. Explicit
                 # vertices avoid zero-normal rounded contacts on tiny islands.
                 for padding, filter_ in contacts:
@@ -168,14 +170,14 @@ def layout_physics(
                     )
     fixture_build_seconds = time.monotonic() - started
     print(
-        f"  physics: {len(fixtures)} convex pieces for {len(bodies)} countries",
+        f"  physics: {len(fixtures)} convex pieces for {len(bodies)} regions",
         flush=True,
     )
     groups = [
-        np.array([i for i, r in enumerate(rows) if r["cluster"] == name])
-        for name in sorted({r["cluster"] for r in rows})
+        np.array([i for i, r in enumerate(rows) if r["group"] == name])
+        for name in sorted({r["group"] for r in rows})
     ]
-    by_code = {r["country_code"]: i for i, r in enumerate(rows)}
+    by_code = {r["id"]: i for i, r in enumerate(rows)}
     final_anchors = anchors.copy()
     links = []
     for i, row in enumerate(rows):
@@ -197,9 +199,9 @@ def layout_physics(
         areas = (1 - progress) * growth.initial_areas + progress * growth.target_areas
         factors = np.sqrt(areas / growth.target_areas)
         for i, part_index, vertices, error, padding, directions, poly in fixtures:
-            _, geographic_offset, final_offset = growth.parts[i][part_index]
+            _, source_offset, final_offset = growth.parts[i][part_index]
             offset = (
-                (1 - progress) * geographic_offset * growth.final_scales[i]
+                (1 - progress) * source_offset * growth.final_scales[i]
                 + progress * final_offset
             ) * factors[i]
             # Explicitly driven quasi-static resizing; this is not a material
@@ -218,7 +220,7 @@ def layout_physics(
         if capture or frame_sink is not None:
             p = positions()
         if frame_sink is not None:
-            # A timeline only needs per-country transforms. Avoid constructing
+            # A timeline only needs per-region transforms. Avoid constructing
             # and retaining coastlines for every captured simulation step.
             frame_sink(
                 {
@@ -247,12 +249,10 @@ def layout_physics(
             if continuing
             else (1 - progress) * anchors + progress * final_anchors
         )
-        acceleration = config["geographic_pull"] * (anchor_targets - previous)
+        acceleration = config["anchor_pull"] * (anchor_targets - previous)
         for indices in groups:
             center = np.average(previous[indices], axis=0, weights=masses[indices])
-            acceleration[indices] += config["cluster_pull"] * (
-                center - previous[indices]
-            )
+            acceleration[indices] += config["group_pull"] * (center - previous[indices])
         forces = masses[:, None] * acceleration
         for child, parent, original, compact in links:
             offset = (
@@ -276,11 +276,24 @@ def layout_physics(
             body.angular_velocity = 0
         space.step(config["physics_dt"])
         movements = np.linalg.norm(positions() - previous, axis=1)
-        advance.worst = rows[int(np.argmax(movements))]["country_code"]
+        advance.worst = rows[int(np.argmax(movements))]["id"]
         return float(np.max(movements))
 
     resize(0)
     capture_frame(0)
+    # Exactly coincident bodies have no contact direction. Seed a tiny,
+    # deterministic motion after capturing the unchanged initial map.
+    coincident = {}
+    for i, body in enumerate(bodies):
+        coincident.setdefault(tuple(body.position), []).append(i)
+    for indices in coincident.values():
+        if len(indices) < 2:
+            continue
+        angles = np.arange(len(indices)) * (2 * math.pi / len(indices))
+        velocities = np.column_stack((np.cos(angles), np.sin(angles))) * 0.001
+        velocities -= np.average(velocities, axis=0, weights=masses[indices])
+        for i, velocity in zip(indices, velocities):
+            bodies[i].velocity = tuple(velocity)
     steps = config["growth_steps"]
     if continuing:
         change = float(
@@ -332,11 +345,11 @@ def layout_physics(
         {
             "method": "continued_growth_rigid_body_physics"
             if continuing
-            else "geographic_growth_rigid_body_physics",
+            else "growth_rigid_body_physics",
             "engine": "Pymunk/Chipmunk",
             "engine_version": pymunk.version,
             "convex_piece_count": len(fixtures),
-            "cluster_fixture_count": cluster_fixture_count,
+            "group_fixture_count": group_fixture_count,
             "cached_collision_part_count": cache_hits,
             "collision_vertex_count": sum(len(f[2]) for f in fixtures),
             "fixture_build_seconds": fixture_build_seconds,
@@ -350,7 +363,7 @@ def layout_physics(
             "max_final_step_movement": movement,
             "position_tolerance": config["position_tolerance"],
             "physics_dt": config["physics_dt"],
-            "initial_geographic_scale": growth.geographic_scale,
+            "initial_map_scale": growth.map_scale,
             "growth_trace": trace,
             "elapsed_seconds": time.monotonic() - started,
             "mean_displacement_from_start": float(

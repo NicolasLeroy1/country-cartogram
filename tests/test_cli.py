@@ -15,14 +15,12 @@ class InstalledPipelineTests(unittest.TestCase):
     def test_command_exports_audited_geometry_and_animation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "values.csv").write_text(
-                "country_code,value\nFRA,3\nDEU,5\nESP,2\n"
-            )
+            (root / "values.csv").write_text("id,value\nFRA,3\nDEU,5\nESP,2\n")
             (root / "config.json").write_text(
                 json.dumps(
                     {
                         "total_area": 100,
-                        "country_gap": 0.1,
+                        "region_gap": 0.1,
                         "growth_steps": 12,
                         "labels": 0,
                         "title": "CLI integration test",
@@ -67,10 +65,10 @@ class InstalledPipelineTests(unittest.TestCase):
             audit = json.loads((root / "result/map.audit.json").read_text())
             self.assertEqual(audit["overlap_pairs"], [])
             self.assertLess(audit["max_relative_area_error"], 1e-8)
-            self.assertGreaterEqual(audit["minimum_country_distance"], 0.1 - 1e-5)
+            self.assertGreaterEqual(audit["minimum_region_distance"], 0.1 - 1e-5)
             layout = json.loads((root / "result/map.layout.json").read_text())
             self.assertEqual(
-                {r["country_code"] for r in layout["countries"]}, {"FRA", "DEU", "ESP"}
+                {r["id"] for r in layout["regions"]}, {"FRA", "DEU", "ESP"}
             )
             # Reuse a CLI-produced bundle through the Python API: no simulation,
             # unchanged checkpoint/metrics, and rejected geometry overrides.
@@ -79,7 +77,7 @@ class InstalledPipelineTests(unittest.TestCase):
                 for suffix in ("layout.json", "metrics.csv", "audit.json")
             }
             style = root / "style.json"
-            style.write_text(json.dumps({"country_gap": 1}))
+            style.write_text(json.dumps({"region_gap": 1}))
             with self.assertRaisesRegex(ValueError, "Geometry settings"):
                 restyle(
                     root / "result/map.layout.json",
@@ -117,7 +115,7 @@ class InstalledPipelineTests(unittest.TestCase):
     def test_installed_command_rejects_invalid_quantities(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "bad.csv").write_text("country_code,value\nFRA,-3\n")
+            (root / "bad.csv").write_text("id,value\nFRA,-3\n")
             result = subprocess.run(
                 [sys.executable, "-m", "country_cartogram", "bad.csv"],
                 cwd=root,

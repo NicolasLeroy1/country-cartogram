@@ -5,9 +5,10 @@
   "divisor": 1000000,
   "suffix": "M",
   "decimals": 0,
-  "label_countries": [
+  "label_regions": [
     "AUS",
     "BRA",
     "ZAF"
-  ]
+  ],
+  "contact_iterations": 200
 }

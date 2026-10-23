@@ -1,6 +1,8 @@
 {
-  "title": "Country cartogram",
-  "subtitle": "Country area represents quantity; color represents cluster",
+  "title": "Cartogram",
+  "source_crs": "EPSG:4326",
+  "projection": "EPSG:8857",
+  "subtitle": "Area represents quantity; color represents group",
   "source_note": "User-supplied quantities",
   "value_label": "Quantity",
   "prefix": "",
@@ -8,12 +10,10 @@
   "suffix": "",
   "decimals": 1,
   "total_area": 10000,
-  "country_gap": 0.2,
-  "cluster_gap": 3.6,
-  "geographic_spread": 0.72,
-  "geographic_pull": 0.002,
-  "cluster_pull": 0.006,
-  "layout_mode": "growth",
+  "region_gap": 0.2,
+  "group_gap": 3.6,
+  "anchor_pull": 0.002,
+  "group_pull": 0.006,
   "growth_steps": 80,
   "relax_per_step": 20,
   "settle_steps": 6000,
@@ -23,7 +23,6 @@
   "collision_tolerance": 0.12,
   "collision_mode": "hull",
   "damping": 0.7,
-  "iterations": 250,
   "territory_distance": 12,
   "parent_pull": 0.04,
   "satellite_distance": 1.4,
@@ -32,11 +31,9 @@
   "simplify": 0.0015,
   "shape_error": 0.02,
   "labels": 14,
-  "label_countries": [],
+  "label_regions": [],
   "label_offsets": {},
-  "label_aliases": {
-    "GBR": "UK"
-  },
+  "label_aliases": {},
   "background": "#edf8fa",
   "ink": "#10243a",
   "colors": {
@@ -46,31 +43,5 @@
     "Africa": "#edc54f",
     "Asia": "#e55261",
     "Oceania": "#f29b45"
-  },
-  "cluster_anchors": {
-    "North America": [
-      -105,
-      42
-    ],
-    "South America": [
-      -62,
-      -18
-    ],
-    "Europe": [
-      12,
-      52
-    ],
-    "Africa": [
-      18,
-      0
-    ],
-    "Asia": [
-      105,
-      32
-    ],
-    "Oceania": [
-      140,
-      -28
-    ]
   }
 }

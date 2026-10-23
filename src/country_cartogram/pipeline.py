@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a 2D country cartogram from CSV, with reusable geometry and audits."""
+"""Create a 2D region cartogram from CSV, with reusable geometry and audits."""
 
 from __future__ import annotations
 import argparse
@@ -9,398 +9,20 @@ import json
 import math
 from pathlib import Path
 import sys
-import textwrap
 import warnings
 
 import numpy as np
 import shapely
-from shapely.geometry import mapping, box
-from shapely.ops import polylabel
-from shapely.geometry.polygon import orient
+from shapely.geometry import mapping
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.path import Path as MplPath
-from matplotlib.patches import PathPatch, Rectangle
-from matplotlib.colors import to_rgb
-
-from .geometry import prepare_country, layout_countries, polygon_parts
+from .rendering import render
+from .geometry import prepare_region
+from .maps import DEFAULT_BOUNDARIES, load_map, add_map_arguments
+from .values import read_values
 from .physics import layout_physics
 
-from .configuration import load_config, country_color
-
-ROOT = Path(__file__).resolve().parent
-
-
-def load_catalog(boundaries):
-    collection = json.loads(Path(boundaries).read_text())
-    catalog = {}
-    for feature in collection["features"]:
-        p = feature["properties"]
-        if p["CONTINENT"] in ("Antarctica", "Seven seas (open ocean)"):
-            continue
-        code = p["ISO_A3_EH"] if p["ISO_A3_EH"] != "-99" else p["ADM0_A3"]
-        # Natural Earth gives Ashmore/Cartier the same ISO as Australia.
-        if p["ADM0_A3"] in ("ATC", "IOA"):
-            code = p["ADM0_A3"]
-        if code in catalog:
-            raise ValueError(f"Duplicate boundary country_code: {code}")
-        names = {
-            "USA": "United States",
-            "CHN": "China",
-            "RUS": "Russia",
-            "KOR": "South Korea",
-            "PRK": "North Korea",
-            "GBR": "United Kingdom",
-            "COD": "DR Congo",
-            "COG": "Congo",
-            "TWN": "Taiwan",
-        }
-        catalog[code] = {
-            "country_code": code,
-            "name": names.get(code, p["NAME_EN"]),
-            "cluster": p["CONTINENT"],
-            "parent": "",
-            "geometry": feature["geometry"],
-            "properties": p,
-        }
-    admin_to_code = {r["properties"]["ADMIN"]: code for code, r in catalog.items()}
-    for code, row in catalog.items():
-        parent = admin_to_code.get(row["properties"]["SOVEREIGNT"], "")
-        if parent and parent != code:
-            row["parent"] = parent
-    return catalog
-
-
-def read_values(path, catalog, value_column="value"):
-    rows, zero_codes = [], []
-    seen = set()
-    with Path(path).open(newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        if not reader.fieldnames or not {"country_code", value_column}.issubset(
-            reader.fieldnames
-        ):
-            raise ValueError(f"CSV needs country_code and {value_column} columns")
-        for line, source in enumerate(reader, 2):
-            code = (source.get("country_code") or "").strip().upper()
-            if code not in catalog:
-                raise ValueError(
-                    f"Line {line}: unknown country_code {code!r}; see data/country_catalog.csv"
-                )
-            if code in seen:
-                raise ValueError(f"Line {line}: duplicate country_code {code}")
-            seen.add(code)
-            try:
-                value = float(source[value_column])
-            except (TypeError, ValueError):
-                raise ValueError(
-                    f"Line {line}: {code} needs a numeric {value_column}; blanks are not zero"
-                ) from None
-            if not math.isfinite(value) or value < 0:
-                raise ValueError(
-                    f"Line {line}: {code} needs a finite non-negative value"
-                )
-            if value == 0:
-                zero_codes.append(code)
-                continue
-            base = catalog[code]
-            status = (source.get("value_status") or "observed").strip()
-            if status not in {
-                "observed",
-                "estimated",
-                "interpolated",
-                "carried_forward",
-                "carried_backward",
-            }:
-                raise ValueError(f"Line {line}: unknown value_status {status!r}")
-            explicit_cluster = (source.get("cluster") or "").strip()
-            # A blank explicit parent disables the boundary metadata default.
-            parent = (source.get("parent", base["parent"]) or "").strip().upper()
-            rows.append(
-                {
-                    "country_code": code,
-                    "value": value,
-                    "name": (source.get("name") or "").strip() or base["name"],
-                    "cluster": explicit_cluster or base["cluster"],
-                    "explicit_cluster": bool(explicit_cluster),
-                    "parent": parent,
-                    "value_status": status,
-                    "value_note": (source.get("value_note") or "").strip(),
-                }
-            )
-    if not rows:
-        raise ValueError("At least one strictly positive quantity is required")
-    by_code = {r["country_code"]: r for r in rows}
-    for row in rows:
-        parent = row["parent"]
-        if parent and parent not in catalog:
-            raise ValueError(f"Unknown parent {parent!r} for {row['country_code']}")
-        if parent == row["country_code"]:
-            raise ValueError(f"Country {parent} cannot be its own parent")
-        if parent and parent not in by_code:
-            warnings.warn(
-                f"{row['country_code']}: parent {parent} is absent; using its own geographic anchor"
-            )
-            row["parent"] = ""
-        if row["parent"]:
-            parent_row = by_code[row["parent"]]
-            if parent_row["parent"]:
-                raise ValueError(
-                    "Parent links must be one level deep (no cycles or chains)"
-                )
-            if row["explicit_cluster"] and row["cluster"] != parent_row["cluster"]:
-                raise ValueError(
-                    f"{row['country_code']} and parent {row['parent']} must share a cluster"
-                )
-            row["cluster"] = parent_row["cluster"]
-    rows.sort(key=lambda row: row["country_code"])
-    total = math.fsum(r["value"] for r in rows)
-    if not math.isfinite(total):
-        raise ValueError("Sum of input values is not finite")
-    return rows, {
-        "omitted_country_codes": sorted(set(catalog) - seen),
-        "zero_country_codes": zero_codes,
-        "sum_of_values": total,
-        "estimated_country_codes": [
-            r["country_code"] for r in rows if r["value_status"] != "observed"
-        ],
-    }
-
-
-def add_geometry(ax, geom, color):
-    for part in polygon_parts(geom):
-        part = orient(part, sign=1)
-        vertices, codes = [], []
-        for ring in [part.exterior, *part.interiors]:
-            xy = np.asarray(ring.coords)
-            vertices.extend(xy)
-            codes.extend(
-                [MplPath.MOVETO]
-                + [MplPath.LINETO] * (len(xy) - 2)
-                + [MplPath.CLOSEPOLY]
-            )
-        ax.add_patch(
-            PathPatch(
-                MplPath(np.asarray(vertices), codes),
-                facecolor=color,
-                edgecolor="none",
-                linewidth=0,
-            )
-        )
-
-
-def formatted(value, config):
-    value /= config["divisor"]
-    return f"{config['prefix']}{value:,.{config['decimals']}f}{config['suffix']}"
-
-
-def render(geometries, rows, config, stem, formats, dpi):
-    plt.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "svg.fonttype": "none",
-            "pdf.fonttype": 42,
-            "text.usetex": False,
-        }
-    )
-    bg, ink = config["background"], config["ink"]
-    fig = plt.figure(figsize=(16, 10), facecolor=bg)
-    fig.text(0.045, 0.94, config["title"], fontsize=29, weight="bold", color=ink)
-    fig.text(0.046, 0.904, config["subtitle"], fontsize=13, color="#4d6576")
-    fig.text(
-        0.954,
-        0.943,
-        "COUNTRY CARTOGRAM",
-        fontsize=9,
-        weight="bold",
-        ha="right",
-        color="#5a7585",
-    )
-    ax = fig.add_axes([0.035, 0.24, 0.93, 0.62], facecolor=bg)
-    for g, row in zip(geometries, rows):
-        add_geometry(ax, g, country_color(row, config))
-    bounds = shapely.total_bounds(geometries)
-    width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
-    ax.set_xlim(bounds[0] - width * 0.055, bounds[2] + width * 0.055)
-    ax.set_ylim(bounds[1] - height * 0.09, bounds[3] + height * 0.09)
-    ax.set_aspect("equal")
-    ax.axis("off")
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    ranked = sorted(
-        range(len(rows)), key=lambda i: (-rows[i]["value"], rows[i]["country_code"])
-    )
-    selected = list(
-        dict.fromkeys(
-            ranked[: config["labels"]]
-            + [
-                i
-                for i, r in enumerate(rows)
-                if r["country_code"] in config["label_countries"]
-            ]
-        )
-    )
-    label_boxes, omitted_labels = [], []
-    all_geometry = shapely.union_all(geometries)
-    for i in selected:
-        row, geom = rows[i], geometries[i]
-        part = max(polygon_parts(geom), key=lambda p: p.area)
-        point = polylabel(part, tolerance=max(math.sqrt(part.area) * 0.01, 0.001))
-        name = config["label_aliases"].get(row["country_code"], row["name"])
-        label = (
-            "\n".join(textwrap.wrap(name, 15)) + "\n" + formatted(row["value"], config)
-        )
-        fontsize = min(
-            17, max(8.5, 8.5 + 11 * math.sqrt(row["value"] / rows[ranked[0]]["value"]))
-        )
-        offset = config["label_offsets"].get(row["country_code"])
-        candidates = [(0, 0, fontsize, True), (0, 0, 9, True), (0, 0, 7.5, True)]
-        if offset:
-            candidates = [(offset[0], offset[1], 9, False)]
-        else:
-            unit = math.sqrt(part.area) * 0.6 + 3
-            candidates += [
-                (dx * unit * distance, dy * unit * distance, 8.5, False)
-                for distance in (1, 1.5, 2.2, 3)
-                for dx, dy in [
-                    (1, 0),
-                    (-1, 0),
-                    (0, 1),
-                    (0, -1),
-                    (1, 1),
-                    (-1, 1),
-                    (1, -1),
-                    (-1, -1),
-                ]
-            ]
-        placed = False
-        for dx, dy, size, inside in candidates:
-            rgb = to_rgb(country_color(row, config))
-            text_color = (
-                "white"
-                if inside and np.dot(rgb, [0.2126, 0.7152, 0.0722]) < 0.61
-                else ink
-            )
-            text = ax.text(
-                point.x + dx,
-                point.y + dy,
-                label,
-                fontsize=size,
-                color=text_color,
-                ha="center",
-                va="center",
-                weight="bold" if inside else "normal",
-                linespacing=1.15,
-                zorder=4,
-            )
-            bb = text.get_window_extent(renderer).expanded(1.09, 1.09)
-            corners = ax.transData.inverted().transform(
-                [[bb.x0, bb.y0], [bb.x1, bb.y1]]
-            )
-            shape_box = box(*corners[0], *corners[1])
-            valid = not any(bb.overlaps(other) for other in label_boxes)
-            if inside:
-                valid = valid and part.contains(shape_box)
-            else:
-                valid = valid and not all_geometry.intersects(shape_box)
-            valid = (
-                valid
-                and ax.bbox.contains(bb.x0, bb.y0)
-                and ax.bbox.contains(bb.x1, bb.y1)
-            )
-            if valid:
-                if not inside:
-                    ax.annotate(
-                        "",
-                        xy=(point.x, point.y),
-                        xytext=(point.x + dx, point.y + dy),
-                        arrowprops={"arrowstyle": "-", "lw": 0.65, "color": "#6e8795"},
-                        zorder=2,
-                    )
-                label_boxes.append(bb)
-                placed = True
-                break
-            text.remove()
-        if not placed:
-            omitted_labels.append(row["country_code"])
-
-    # Bottom panels: ranked quantities, region key, and reading guide.
-    fig.add_artist(
-        plt.Line2D(
-            [0.045, 0.955],
-            [0.222, 0.222],
-            transform=fig.transFigure,
-            color="#c9dde3",
-            lw=1,
-        )
-    )
-    fig.text(0.045, 0.192, "LARGEST QUANTITIES", fontsize=10, weight="bold", color=ink)
-    for rank, i in enumerate(ranked[:10]):
-        col, line = divmod(rank, 5)
-        x, y = 0.045 + col * 0.225, 0.165 - line * 0.025
-        row = rows[i]
-        fig.text(x, y, f"{rank + 1:02d}", fontsize=8.7, color="#758b97")
-        fig.text(x + 0.021, y, row["name"], fontsize=9, color=ink)
-        fig.text(
-            x + 0.205,
-            y,
-            formatted(row["value"], config),
-            fontsize=9,
-            weight="bold",
-            ha="right",
-            color=ink,
-        )
-    fig.text(0.52, 0.192, "CLUSTERS", fontsize=10, weight="bold", color=ink)
-    groups = sorted({r["cluster"] for r in rows})
-    for j, group in enumerate(groups[:12]):
-        col, line = divmod(j, 6)
-        x, y = 0.52 + col * 0.15, 0.162 - line * 0.02
-        row = next(r for r in rows if r["cluster"] == group)
-        fig.add_artist(
-            Rectangle(
-                (x, y),
-                0.009,
-                0.011,
-                transform=fig.transFigure,
-                facecolor=config["colors"].get(group, country_color(row, config)),
-                edgecolor="none",
-            )
-        )
-        fig.text(x + 0.014, y, group, fontsize=8.2, color=ink)
-    fig.text(0.79, 0.192, "HOW TO READ", fontsize=10, weight="bold", color=ink)
-    fig.text(
-        0.79,
-        0.162,
-        "Area = quantity\nShapes retain their outlines\nNearby hues = same cluster\nPositions are approximate",
-        fontsize=9,
-        color="#4d6576",
-        linespacing=1.65,
-        va="top",
-    )
-    note = config["source_note"] + f" | {len(rows)} countries / territories shown."
-    fig.text(
-        0.045, 0.028, "\n".join(textwrap.wrap(note, 160)), fontsize=7.8, color="#68808c"
-    )
-    fig.text(
-        0.955,
-        0.028,
-        "Natural Earth boundaries",
-        ha="right",
-        fontsize=7.8,
-        color="#68808c",
-    )
-    for fmt in formats:
-        fig.savefig(
-            stem.with_suffix("." + fmt),
-            dpi=dpi,
-            facecolor=bg,
-            metadata={"Creator": "Country Cartogram"}
-            if fmt in ("svg", "pdf")
-            else None,
-        )
-    plt.close(fig)
-    return omitted_labels
+from .configuration import load_config
 
 
 def audit(geometries, rows, config):
@@ -409,47 +31,40 @@ def audit(geometries, rows, config):
     target = values / math.fsum(values) * config["total_area"]
     area_error = float(np.max(np.abs(areas / target - 1)))
     minimum = math.inf
-    cluster_minimum = math.inf
-    closest_cluster_pair = None
+    group_minimum = math.inf
+    closest_group_pair = None
     overlaps = []
     for i, a in enumerate(geometries):
         if not a.is_valid:
-            raise RuntimeError(f"Invalid output geometry: {rows[i]['country_code']}")
+            raise RuntimeError(f"Invalid output geometry: {rows[i]['id']}")
         for j in range(i):
             distance = a.distance(geometries[j])
             minimum = min(minimum, distance)
-            if rows[i]["cluster"] != rows[j]["cluster"]:
-                if distance < cluster_minimum:
-                    cluster_minimum = distance
-                    closest_cluster_pair = [
-                        rows[i]["country_code"],
-                        rows[j]["country_code"],
+            if rows[i]["group"] != rows[j]["group"]:
+                if distance < group_minimum:
+                    group_minimum = distance
+                    closest_group_pair = [
+                        rows[i]["id"],
+                        rows[j]["id"],
                     ]
             if a.intersection(geometries[j]).area > 1e-9:
-                overlaps.append([rows[i]["country_code"], rows[j]["country_code"]])
+                overlaps.append([rows[i]["id"], rows[j]["id"]])
     if overlaps or area_error > 1e-8:
         raise RuntimeError(
             f"Geometry audit failed: area error {area_error}, overlaps {overlaps[:5]}"
         )
-    gap_required = (
-        config["country_gap"]
-        if config.get("layout_mode") == "growth"
-        else min(config["country_gap"], config["cluster_gap"])
-    )
+    gap_required = config["region_gap"]
     if minimum < gap_required - 1e-5:
         raise RuntimeError(f"Minimum gap {minimum} below requested {gap_required}")
-    if (
-        config.get("layout_mode") == "growth"
-        and cluster_minimum < config["cluster_gap"] - 1e-5
-    ):
+    if group_minimum < config["group_gap"] - 1e-5:
         raise RuntimeError(
-            f"Minimum cluster gap {cluster_minimum} ({closest_cluster_pair}) below requested {config['cluster_gap']}"
+            f"Minimum group gap {group_minimum} ({closest_group_pair}) below requested {config['group_gap']}"
         )
     return {
         "max_relative_area_error": area_error,
-        "minimum_country_distance": minimum if math.isfinite(minimum) else None,
-        "minimum_cluster_distance": cluster_minimum
-        if math.isfinite(cluster_minimum)
+        "minimum_region_distance": minimum if math.isfinite(minimum) else None,
+        "minimum_group_distance": group_minimum
+        if math.isfinite(group_minimum)
         else None,
         "overlap_pairs": overlaps,
         "all_geometries_valid": True,
@@ -461,7 +76,7 @@ def run(
     *,
     config_path=None,
     output=Path("output/cartogram"),
-    boundaries=ROOT / "data/countries.geojson",
+    boundaries=DEFAULT_BOUNDARIES,
     formats=("png", "svg", "pdf"),
     dpi=180,
     value_column="value",
@@ -473,9 +88,11 @@ def run(
     initial_layout=None,
     frame_sink=None,
     collision_cache=None,
+    source_crs=None,
+    projection=None,
     _source=None,
 ):
-    """Solve a country layout, write exports, and return the numerical audit.
+    """Solve a region layout, write exports, and return the numerical audit.
 
     Paths accept strings or Path objects. ``output`` is a filename stem;
     existing files at that stem are replaced. Use ``formats=()`` to save only
@@ -484,11 +101,15 @@ def run(
     adds an experimental 3D export. Internal frame/cache arguments support
     run_timeline(); ordinary callers can leave them at their defaults.
     """
-    config = load_config(config_path)
-    catalog = _source[0] if _source is not None else load_catalog(boundaries)
+    config = load_config(config_path, source_crs=source_crs, projection=projection)
+    base_map = _source or load_map(
+        boundaries, source_crs=config["source_crs"], projection=config["projection"]
+    )
+    catalog = base_map.catalog
     rows, coverage = read_values(csv_path, catalog, value_column)
     if volume_column:
-        from .extrusion import export_3d, load_3d_config, read_quantity_pairs
+        from .extrusion import export_3d, load_3d_config
+        from .values import read_quantity_pairs
 
         # Validate both quantities before simulation.
         load_3d_config(config_3d)
@@ -497,19 +118,13 @@ def run(
             raise ValueError("html_js must be inline or cdn")
     elif config_3d or preview_3d:
         raise ValueError("3D configuration / preview requires volume_column")
-    if len({r["cluster"] for r in rows}) > 12:
+    if formats and len({r["group"] for r in rows}) > 12:
         raise ValueError(
-            "The figure template supports at most 12 clusters; split the figure or extend render()"
+            "Static figures support at most 12 groups; use a viewer-only timeline for more groups"
         )
-    boundaries_hash = (
-        _source[1]
-        if _source is not None
-        else hashlib.sha256(Path(boundaries).read_bytes()).hexdigest()
-    )
+    boundaries_hash = base_map.sha256
     initial_state = None
     if initial_layout:
-        if config["layout_mode"] != "growth":
-            raise ValueError("initial_layout requires growth mode")
         from .continuation import prepare_continuation
 
         geometries, anchors, metadata, initial_state = prepare_continuation(
@@ -519,8 +134,8 @@ def run(
         geometries, anchors, metadata = [], [], []
         for row in rows:
             target = row["value"] / coverage["sum_of_values"] * config["total_area"]
-            geom, anchor, detail = prepare_country(
-                catalog[row["country_code"]]["geometry"],
+            geom, anchor, detail = prepare_region(
+                base_map.projection.geometry(catalog[row["id"]]["geometry"]),
                 target,
                 **{
                     k: config[k]
@@ -537,29 +152,23 @@ def run(
             anchors.append(anchor)
             metadata.append(detail)
     print(
-        f"Packing {len(rows)} countries in {len({r['cluster'] for r in rows})} clusters...",
+        f"Packing {len(rows)} regions in {len({r['group'] for r in rows})} groups...",
         flush=True,
     )
-    frames = []
-    if config["layout_mode"] == "growth":
-        placed, positions, packing, frames = layout_physics(
-            geometries,
-            np.array(anchors),
-            rows,
-            metadata,
-            config,
-            capture=animate,
-            initial_state=initial_state,
-            frame_sink=frame_sink,
-            collision_cache=collision_cache,
-        )
-        if not packing["equilibrium_converged"]:
-            warnings.warn(
-                "Settling reached its iteration limit; see equilibrium diagnostics in the audit"
-            )
-    else:
-        placed, positions, packing = layout_countries(
-            geometries, np.array(anchors), rows, config
+    placed, positions, packing, frames = layout_physics(
+        geometries,
+        np.array(anchors),
+        rows,
+        metadata,
+        config,
+        capture=animate,
+        initial_state=initial_state,
+        frame_sink=frame_sink,
+        collision_cache=collision_cache,
+    )
+    if not packing["equilibrium_converged"]:
+        warnings.warn(
+            "Settling reached its iteration limit; see equilibrium diagnostics in the audit"
         )
     diagnostics = audit(placed, rows, config)
     diagnostics["shape_approximation"] = {
@@ -577,7 +186,11 @@ def run(
     }
     stem = Path(output)
     stem.parent.mkdir(parents=True, exist_ok=True)
-    omitted_labels = render(placed, rows, config, stem, formats, dpi) if formats else []
+    omitted_labels = (
+        render(placed, rows, config, stem, formats, dpi, boundary_label=base_map.label)
+        if formats
+        else []
+    )
     if frames:
         from .evolution import render_evolution
 
@@ -586,7 +199,7 @@ def run(
             rows,
             config,
             stem,
-            initial_label="Previous layout" if initial_state else "Geographic start",
+            initial_label="Previous layout" if initial_state else "Map start",
         )
     diagnostics.update(
         {
@@ -597,6 +210,7 @@ def run(
             "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
             "input_sha256": hashlib.sha256(Path(csv_path).read_bytes()).hexdigest(),
             "boundaries_sha256": boundaries_hash,
+            "map": {"label": base_map.label, **base_map.projection.settings},
             "versions": {
                 "python": sys.version.split()[0],
                 "numpy": np.__version__,
@@ -608,14 +222,14 @@ def run(
     if initial_state:
         diagnostics["continuation"] = {
             "initial_layout_sha256": initial_state["layout_sha256"],
-            "reused_country_count": len(rows),
+            "reused_region_count": len(rows),
         }
     stem.with_suffix(".audit.json").write_text(json.dumps(diagnostics, indent=2) + "\n")
     with stem.with_suffix(".metrics.csv").open("w", newline="") as f:
         fields = [
-            "country_code",
+            "id",
             "name",
-            "cluster",
+            "group",
             "parent",
             "value",
             "share",
@@ -643,9 +257,9 @@ def run(
                 }
             )
     layout = {
-        "schema_version": 2,
+        "schema_version": 3,
         "coordinate_system": diagnostics["coordinate_system"],
-        "countries": [
+        "regions": [
             {
                 **row,
                 "geometry": mapping(geom),
@@ -655,19 +269,18 @@ def run(
             for row, geom, position, detail in zip(rows, placed, positions, metadata)
         ],
     }
-    if config["layout_mode"] == "growth":
-        from .continuation import GEOMETRY_KEYS
+    from .continuation import GEOMETRY_KEYS
 
-        anchor_factor = 1 if initial_state else packing["initial_geographic_scale"]
-        layout["simulation_state"] = {
-            "geographic_scale": packing["initial_geographic_scale"],
-            "geographic_anchors": {
-                r["country_code"]: (np.asarray(a) * anchor_factor).tolist()
-                for r, a in zip(rows, anchors)
-            },
-            "geometry_config": {key: config[key] for key in GEOMETRY_KEYS},
-            "boundaries_sha256": boundaries_hash,
-        }
+    anchor_factor = 1 if initial_state else packing["initial_map_scale"]
+    layout["simulation_state"] = {
+        "map_scale": packing["initial_map_scale"],
+        "map_anchors": {
+            r["id"]: (np.asarray(a) * anchor_factor).tolist()
+            for r, a in zip(rows, anchors)
+        },
+        "geometry_config": {key: config[key] for key in GEOMETRY_KEYS},
+        "boundaries_sha256": boundaries_hash,
+    }
     stem.with_suffix(".layout.json").write_text(
         json.dumps(layout, separators=(",", ":")) + "\n"
     )
@@ -695,7 +308,7 @@ def run(
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "csv", type=Path, help="CSV with country_code and non-negative quantities"
+        "csv", type=Path, help="CSV with id and non-negative quantities"
     )
     parser.add_argument(
         "--config", type=Path, help="JSON overrides for style and layout settings"
@@ -706,9 +319,7 @@ def main():
         default=Path("output/cartogram"),
         help="Output filename stem, without extension",
     )
-    parser.add_argument(
-        "--boundaries", type=Path, default=ROOT / "data/countries.geojson"
-    )
+    add_map_arguments(parser)
     parser.add_argument(
         "--formats",
         nargs="+",
@@ -719,7 +330,7 @@ def main():
     parser.add_argument(
         "--value-column",
         default="value",
-        help="Column controlling country area (default: value)",
+        help="Column controlling region area (default: value)",
     )
     parser.add_argument(
         "--animate",
@@ -762,6 +373,8 @@ def main():
             config_path=args.config,
             output=args.out,
             boundaries=args.boundaries,
+            source_crs=args.source_crs,
+            projection=args.projection,
             formats=args.formats,
             dpi=args.dpi,
             value_column=args.value_column,

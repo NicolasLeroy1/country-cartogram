@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from urllib.request import urlopen
 
-from country_cartogram.pipeline import ROOT as PACKAGE_ROOT, load_catalog
+from country_cartogram.maps import DEFAULT_BOUNDARIES, load_catalog
 from country_cartogram.timeline import fill_missing_periods
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,18 +65,16 @@ def prepare(snapshot, catalog):
             parent = country["parent"] if country["parent"] in included else ""
             periods[year].append(
                 {
-                    "country_code": code,
+                    "id": code,
                     "value": format(observations[code][year], ".15g"),
                     "name": country["name"],
                     "parent": parent,
-                    "cluster": catalog[parent]["cluster"]
-                    if parent
-                    else country["cluster"],
+                    "group": catalog[parent]["group"] if parent else country["group"],
                 }
             )
     excluded = [
         {
-            "country_code": code,
+            "id": code,
             "name": catalog[code]["name"],
             "reason": "No known positive, non-forecast GDP in 1985–2024",
         }
@@ -111,7 +109,7 @@ def main():
             )
         )
     snapshot = json.loads(gzip.decompress(SNAPSHOT.read_bytes()))
-    catalog = load_catalog(PACKAGE_ROOT / "data/countries.geojson")
+    catalog = load_catalog(DEFAULT_BOUNDARIES)
     rows, included, excluded = prepare(snapshot, catalog)
     csv_path = EXAMPLES / "gdp-1985-2024.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
@@ -119,10 +117,10 @@ def main():
             stream,
             fieldnames=[
                 "year",
-                "country_code",
+                "id",
                 "value",
                 "name",
-                "cluster",
+                "group",
                 "parent",
                 "value_status",
                 "value_note",
@@ -139,9 +137,9 @@ def main():
         "divisor": 1e12,
         "suffix": "T",
         "decimals": 1,
-        "country_gap": 0.2,
-        "cluster_gap": 3.6,
-        "label_countries": ["USA", "CHN", "JPN", "DEU", "IND", "BRA"],
+        "region_gap": 0.2,
+        "group_gap": 3.6,
+        "label_regions": ["USA", "CHN", "JPN", "DEU", "IND", "BRA"],
     }
     provenance = {
         "indicator": INDICATOR,
@@ -159,9 +157,9 @@ def main():
         "period_start": START,
         "period_end": END,
         "period_count": END - START + 1,
-        "country_count": len(included),
-        "included_country_codes": included,
-        "country_code_aliases": CODE_ALIASES,
+        "region_count": len(included),
+        "included_region_ids": included,
+        "id_aliases": CODE_ALIASES,
         "normalization": "shares of the included cohort's GDP, not total world GDP",
         "boundary_convention": "Present-day bundled Natural Earth boundaries throughout; historical border changes are not simulated.",
         "territorial_breaks": "World Bank country-series definitions are retained. No historical border crosswalk is inferred; filling missing values does not reconcile predecessor/successor national accounts.",

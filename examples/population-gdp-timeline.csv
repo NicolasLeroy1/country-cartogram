@@ -1,4 +1,4 @@
-year,country_code,population,gdp_usd,name,cluster,parent
+year,id,population,gdp_usd,name,group,parent
 2020,ABW,106314.0,3056000000.0,Aruba,Europe,NLD
 2020,AFG,38041754.0,19291000000.0,Afghanistan,Asia,
 2020,AGO,31825295.0,88815000000.0,Angola,Africa,

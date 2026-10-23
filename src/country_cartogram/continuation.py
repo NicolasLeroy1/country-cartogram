@@ -20,6 +20,8 @@ GEOMETRY_KEYS = (
     "simplify",
     "satellite_distance",
     "shape_error",
+    "source_crs",
+    "projection",
 )
 
 
@@ -27,80 +29,47 @@ def prepare_continuation(path, rows, config, boundaries_sha256):
     """Reuse positions, exact retained outlines, and the original anchor frame."""
     path = Path(path)
     previous = json.loads(path.read_text(encoding="utf-8"))
-    old_rows = previous.get("countries", [])
-    old = {r["country_code"]: r for r in old_rows}
-    codes = {r["country_code"] for r in rows}
+    old_rows = previous.get("regions", [])
+    old = {r["id"]: r for r in old_rows}
+    codes = {r["id"] for r in rows}
     if not old or len(old) != len(old_rows):
-        raise ValueError("Previous layout must contain unique country records")
+        raise ValueError("Previous layout must contain unique region records")
     if codes != set(old):
         raise ValueError(
-            "Continuation requires the same positive country coverage; "
+            "Continuation requires the same positive region coverage; "
             f"added={sorted(codes - set(old))}, removed={sorted(set(old) - codes)}. "
-            "Use a consistent country cohort or start a new layout."
+            "Use a consistent region cohort or start a new layout."
         )
-    state = previous.get("simulation_state")
-    if state is None:
-        # Backward compatibility with v0.1/v0.2 layouts and their companion audit.
-        audit_path = path.with_name(
-            path.name.removesuffix(".layout.json") + ".audit.json"
-        )
-        if not audit_path.exists():
-            raise ValueError(
-                "Older layouts require their companion .audit.json for continuation"
-            )
-        audit = json.loads(audit_path.read_text(encoding="utf-8"))
-        if audit["packing"].get("method") != "geographic_growth_rigid_body_physics":
-            raise ValueError(
-                "Continuation requires a growth-mode layout, not a legacy packing"
-            )
-        geographic_scale = audit["packing"]["initial_geographic_scale"]
-        state = {
-            "geographic_scale": geographic_scale,
-            "geographic_anchors": {
-                code: (
-                    np.asarray(row["preprocessing"]["parts"][0]["source_center"])
-                    * geographic_scale
-                ).tolist()
-                for code, row in old.items()
-            },
-            "geometry_config": {
-                k: audit["config"].get(k, 0 if k == "shape_error" else None)
-                for k in GEOMETRY_KEYS
-            },
-            "boundaries_sha256": audit["boundaries_sha256"],
-        }
+    state = previous["simulation_state"]
     if state["boundaries_sha256"] != boundaries_sha256:
         raise ValueError(
             "Boundary dataset changed; start a new layout instead of continuing"
         )
     changed = [
-        key
-        for key in GEOMETRY_KEYS
-        if config[key]
-        != state["geometry_config"].get(key, 0 if key == "shape_error" else None)
+        key for key in GEOMETRY_KEYS if config[key] != state["geometry_config"][key]
     ]
     if changed:
         raise ValueError(f"Outline settings changed ({changed}); start a new layout")
-    geographic_scale = state["geographic_scale"]
+    map_scale = state["map_scale"]
     if (
-        not isinstance(geographic_scale, (int, float))
-        or not math.isfinite(geographic_scale)
-        or geographic_scale <= 0
+        not isinstance(map_scale, (int, float))
+        or not math.isfinite(map_scale)
+        or map_scale <= 0
     ):
         raise ValueError("Previous layout has an invalid geographic scale")
     geometries, anchors, metadata, positions, initial_areas = [], [], [], [], []
     total = math.fsum(row["value"] for row in rows)
     for row in rows:
-        code = row["country_code"]
+        code = row["id"]
         prior = old[code]
-        if (row["cluster"], row.get("parent", "")) != (
-            prior["cluster"],
+        if (row["group"], row.get("parent", "")) != (
+            prior["group"],
             prior.get("parent", ""),
         ):
-            raise ValueError(f"{code}: cluster or parent changed; start a new layout")
+            raise ValueError(f"{code}: group or parent changed; start a new layout")
         geometry = shape(prior["geometry"])
         position = np.asarray(prior["position"], dtype=float)
-        anchor = np.asarray(state["geographic_anchors"][code], dtype=float)
+        anchor = np.asarray(state["map_anchors"][code], dtype=float)
         if (
             geometry.geom_type not in ("Polygon", "MultiPolygon")
             or not geometry.is_valid
@@ -138,7 +107,7 @@ def prepare_continuation(path, rows, config, boundaries_sha256):
     initial = {
         "positions": np.asarray(positions),
         "areas": np.asarray(initial_areas),
-        "geographic_scale": geographic_scale,
+        "map_scale": map_scale,
         "anchors": np.asarray(anchors),
         "layout_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
     }

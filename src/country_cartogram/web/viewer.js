@@ -20,7 +20,7 @@
       .pipeThrough(new DecompressionStream("gzip"));
     const data = JSON.parse(await new Response(stream).text());
     const transforms = new Float32Array(bytes(data.transforms).buffer),
-      count = data.countries.length;
+      count = data.regions.length;
     const viewport = $("viewport"),
       scene = new THREE.Scene();
     scene.background = new THREE.Color("#f7f8f5");
@@ -36,7 +36,7 @@
     viewport.prepend(renderer.domElement);
     renderer.domElement.setAttribute(
       "aria-label",
-      "Interactive country cartogram",
+      "Interactive region cartogram",
     );
     renderer.domElement.setAttribute("role", "img");
     const b = data.bounds,
@@ -95,7 +95,7 @@
       estimateWeights = new Float32Array(count),
       valueStatuses = Array(count).fill("observed"),
       valueNotes = Array(count).fill(""),
-      baseColors = data.countries.map((c) => new THREE.Color(c.color)),
+      baseColors = data.regions.map((c) => new THREE.Color(c.color)),
       estimatedColor = new THREE.Color("#a0a5a9");
     const frameTimes = new Float64Array(data.frameCount);
     frameTimes[0] = marks[0].time;
@@ -118,14 +118,14 @@
         frameTimes[i] = left.time + (right.time - left.time) * fraction;
       }
     }
-    function statusAt(year, country) {
-      return data.valueStatuses?.[String(year)]?.[country] || "observed";
+    function statusAt(year, region) {
+      return data.valueStatuses?.[String(year)]?.[region] || "observed";
     }
-    function estimateAt(frame, country) {
+    function estimateAt(frame, region) {
       const from = frame.from ?? frame.year;
       return (
-        Number(statusAt(from, country) !== "observed") * (1 - frame.progress) +
-        Number(statusAt(frame.year, country) !== "observed") * frame.progress
+        Number(statusAt(from, region) !== "observed") * (1 - frame.progress) +
+        Number(statusAt(frame.year, region) !== "observed") * frame.progress
       );
     }
     let time = marks[0].time,
@@ -142,7 +142,7 @@
       pointer = null,
       hoverRequest = null;
     for (let i = 0; i < count; i++) {
-      const c = data.countries[i],
+      const c = data.regions[i],
         vertices = new Float32Array(bytes(c.vertices).buffer),
         Index = c.indexBytes === 2 ? Uint16Array : Uint32Array;
       const solid = new THREE.BufferGeometry();
@@ -228,7 +228,7 @@
           "uniform float oitPass;\n" + shader.fragmentShader;
         if (oitAvailable) {
           // Weighted accumulation and multiplicative revealage are commutative:
-          // camera motion cannot flip whole-country transparency sorting.
+          // camera motion cannot flip whole-region transparency sorting.
           shader.fragmentShader = shader.fragmentShader.replace(
             "void main() {",
             "void main() {\nif(oitPass>.5){gl_FragColor=vec4(0.0,0.0,0.0,opacity);return;}",
@@ -254,8 +254,8 @@
       meshes.push(mesh);
       solids.push(solid);
       flats.push(flat);
-      if (!groups.has(c.cluster))
-        groups.set(c.cluster, { color: c.color, visible: true });
+      if (!groups.has(c.group))
+        groups.set(c.group, { color: c.color, visible: true });
     }
     let renderRequest = null;
     const opaqueTarget = oitAvailable
@@ -450,23 +450,23 @@
       $("tooltip").style.display = "none";
     }
     function tooltip(i) {
-      const c = data.countries[i],
-        countryValues = values.subarray(i * 3, i * 3 + 3),
+      const c = data.regions[i],
+        regionValues = values.subarray(i * 3, i * 3 + 3),
         tip = $("tooltip");
       tip.replaceChildren();
       const title = document.createElement("strong");
-      title.textContent = c.name + " (" + c.code + ")";
+      title.textContent = c.name + " (" + c.id + ")";
       tip.append(title);
       ["area_label", "height_label", "volume_label"].forEach((key, k) => {
         if (data.mode === "2d" && k > 0) return;
         const line = document.createElement("div");
-        line.textContent = data.config[key] + ": " + fmt(countryValues[k]);
+        line.textContent = data.config[key] + ": " + fmt(regionValues[k]);
         tip.append(line);
       });
       if (data.normalization === "shares") {
         const line = document.createElement("div");
         line.textContent =
-          fmt((100 * countryValues[0]) / currentTotal) + "% of included total";
+          fmt((100 * regionValues[0]) / currentTotal) + "% of included total";
         tip.append(line);
       }
       if (estimateWeights[i] > 1e-8) {
@@ -744,7 +744,7 @@
         group.visible = !group.visible;
         button.setAttribute("aria-pressed", String(group.visible));
         meshes.forEach((m, i) => {
-          if (data.countries[i].cluster === name) m.visible = group.visible;
+          if (data.regions[i].group === name) m.visible = group.visible;
         });
         hideTooltip();
         invalidate();
@@ -754,8 +754,8 @@
     $("search").oninput = () => {
       const query = $("search").value.toLocaleLowerCase();
       meshes.forEach((m, i) => {
-        const c = data.countries[i],
-          match = (c.name + " " + c.code).toLocaleLowerCase().includes(query);
+        const c = data.regions[i],
+          match = (c.name + " " + c.id).toLocaleLowerCase().includes(query);
         m.material.emissive.set(query && match ? 0x23443d : 0x000000);
       });
       invalidate();
@@ -798,7 +798,7 @@
         ? " Heights use one common scale across all periods."
         : "") +
       (data.hasEstimates
-        ? " Missing annual values were filled before simulation; grey countries use estimates."
+        ? " Missing annual values were filled before simulation; grey regions use estimates."
         : "");
     $("opacity").value = Math.round(opacity * 100);
     $("opacity").oninput = () =>
@@ -842,7 +842,7 @@
     notice.textContent =
       "Unable to display the map: " +
       error.message +
-      " Country values are available below.";
+      " Region values are available below.";
     console.error(error);
   }
 })();

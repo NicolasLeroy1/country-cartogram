@@ -46,7 +46,7 @@ const { chromium } = require("playwright");
     const info = await page.evaluate(() => {
       const { data } = window.__timelineTest;
       return {
-        countries: data.countries.length,
+        regions: data.regions.length,
         observations: data.endpoints.length,
         first: Number(data.frames[data.endpoints[0]].year),
         last: Number(data.frames[data.endpoints.at(-1)].year),
@@ -131,7 +131,7 @@ const { chromium } = require("playwright");
             if (colour !== "a0a5a9") throw new Error("Estimate not grey");
             estimated++;
           } else if (estimateWeights[i] === 0) {
-            if (colour !== data.countries[i].color.slice(1))
+            if (colour !== data.regions[i].color.slice(1))
               throw new Error("Observed country lost group colour");
             observed++;
           }
@@ -156,7 +156,7 @@ const { chromium } = require("playwright");
     assert.ok(progress.frame % 1 > 0 && progress.time > info.first);
     await page.locator("#year").selectOption(String(info.last));
     if (process.argv[3])
-      await page.screenshot({ path: process.argv[3], fullPage: true });
+      await page.locator("#viewport").screenshot({ path: process.argv[3] });
     assert.deepEqual(errors, []);
     assert.deepEqual(requests, []);
     console.log(

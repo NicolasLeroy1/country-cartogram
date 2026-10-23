@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 
 from country_cartogram.configuration import DEFAULTS
-from country_cartogram.pipeline import ROOT as PACKAGE_ROOT, load_catalog
+from country_cartogram.maps import DEFAULT_BOUNDARIES, load_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
-DATA = PACKAGE_ROOT / "data"
+DATA = DEFAULT_BOUNDARIES.parent
 YEARS = range(2020, 2023)
 LABELS_3D = {
     "area_label": "Population (people)",
@@ -27,7 +27,7 @@ CONFIGS = {
         "divisor": 1_000_000,
         "suffix": "T",
         "decimals": 1,
-        "label_countries": ["AUS", "BRA", "IND", "ZAF", "NGA"],
+        "label_regions": ["AUS", "BRA", "IND", "ZAF", "NGA"],
     },
     "population": {
         "title": "Population by country",
@@ -36,7 +36,7 @@ CONFIGS = {
         "divisor": 1_000_000,
         "suffix": "M",
         "decimals": 0,
-        "label_countries": ["AUS", "BRA", "ZAF"],
+        "label_regions": ["AUS", "BRA", "ZAF"],
     },
 }
 
@@ -55,10 +55,10 @@ def write_json(path, value):
 def country_fields(row, catalog, included):
     parent = row["parent"] if row["parent"] in included else ""
     return {
-        "country_code": row["country_code"],
+        "id": row["id"],
         "name": row["name"],
         "parent": parent,
-        "cluster": catalog[parent]["cluster"] if parent else row["cluster"],
+        "group": catalog[parent]["group"] if parent else row["group"],
     }
 
 
@@ -69,7 +69,7 @@ def growth_factor(code, lower, spread, prefix=""):
 
 def main():
     catalog = load_catalog(DATA / "countries.geojson")
-    metadata = ["country_code", "name", "cluster", "parent"]
+    metadata = ["id", "name", "group", "parent"]
     populations = []
     for kind, field, year in [
         ("gdp", "GDP_MD", "GDP_YEAR"),
@@ -88,7 +88,7 @@ def main():
         ]
         write_csv(
             EXAMPLES / f"{kind}.csv",
-            ["country_code", "value", *metadata[1:], "year"],
+            ["id", "value", *metadata[1:], "year"],
             rows,
         )
         write_json(EXAMPLES / f"{kind}.json", CONFIGS[kind])
@@ -96,13 +96,13 @@ def main():
             populations = rows
 
     write_csv(
-        DATA / "country_catalog.csv",
+        DATA / "region_catalog.csv",
         metadata,
         [{key: row[key] for key in metadata} for _, row in sorted(catalog.items())],
     )
     write_csv(
         EXAMPLES / "your_values.csv",
-        ["country_code", "value", *metadata[1:]],
+        ["id", "value", *metadata[1:]],
         [
             {**country_fields(row, catalog, catalog), "value": ""}
             for _, row in sorted(catalog.items())
@@ -128,7 +128,7 @@ def main():
     write_csv(
         EXAMPLES / "population-gdp.csv",
         [
-            "country_code",
+            "id",
             "population",
             "gdp_usd",
             *metadata[1:],
@@ -141,6 +141,7 @@ def main():
         **CONFIGS["population"],
         "title": "Population and GDP",
         "source_note": "Natural Earth historical population and GDP; mixed years. Missing GDP excluded.",
+        "contact_iterations": 200,
     }
     write_json(EXAMPLES / "population-gdp.json", paired_config)
     write_json(
@@ -157,8 +158,7 @@ def main():
             **{key: row[key] for key in metadata},
             "year": year,
             "value": round(
-                row["value"]
-                * growth_factor(row["country_code"], 0.99, 0.04) ** (year - 2020),
+                row["value"] * growth_factor(row["id"], 0.99, 0.04) ** (year - 2020),
                 3,
             ),
             "source_population_year": row["year"],
@@ -168,7 +168,7 @@ def main():
     ]
     write_csv(
         EXAMPLES / "population-timeline.csv",
-        ["year", "country_code", "value", *metadata[1:], "source_population_year"],
+        ["year", "id", "value", *metadata[1:], "source_population_year"],
         population_series,
     )
     write_json(
@@ -187,13 +187,12 @@ def main():
             "year": year,
             "population": round(
                 float(row["population"])
-                * growth_factor(row["country_code"], 0.99, 0.04) ** (year - 2020),
+                * growth_factor(row["id"], 0.99, 0.04) ** (year - 2020),
                 3,
             ),
             "gdp_usd": round(
                 float(row["gdp_usd"])
-                * growth_factor(row["country_code"], 0.96, 0.12, "GDP")
-                ** (year - 2020),
+                * growth_factor(row["id"], 0.96, 0.12, "GDP") ** (year - 2020),
                 3,
             ),
         }
@@ -202,7 +201,7 @@ def main():
     ]
     write_csv(
         EXAMPLES / "population-gdp-timeline.csv",
-        ["year", "country_code", "population", "gdp_usd", *metadata[1:]],
+        ["year", "id", "population", "gdp_usd", *metadata[1:]],
         paired_series,
     )
     write_json(
@@ -213,7 +212,7 @@ def main():
             "source_note": "Synthetic population/GDP growth from historical Natural Earth attributes; not observed time-series data.",
         },
     )
-    print(f"Prepared {len(catalog)} countries and {len(paired)} paired records")
+    print(f"Prepared {len(catalog)} regions and {len(paired)} paired records")
 
 
 if __name__ == "__main__":

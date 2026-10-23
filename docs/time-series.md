@@ -4,10 +4,10 @@ Each period starts from the previous map's shapes and positions.
 
 ## Input
 
-Create `history.csv` with integer years and country values:
+Create `history.csv` with integer years and region values:
 
 ```csv
-year,country_code,value
+year,id,value
 2020,FRA,60
 2020,DEU,80
 2021,FRA,62
@@ -25,7 +25,7 @@ to annual inputs; playback moves continuously between captured simulation states
 Years are sorted numerically. Use `--time-column` and `--value-column` to select
 other column names. Optional names, groups, and parents follow the
 [CSV input rules](usage.md#supply-your-quantities).
-The same countries must have positive values in every period, with fixed groups,
+The same regions must have positive values in every period, with fixed groups,
 parents, and shape settings. Missing values can be filled as described below.
 
 `--viewer-only` skips static figures. Omit it to also generate PNG and SVG maps
@@ -42,10 +42,10 @@ Fixed mode sets area per unit to `total_area / first-period total`.
 The same value then occupies the same area in every period; total land area can
 change. Adding later periods keeps that scale.
 
-Shares mode keeps the map's total land area at `total_area`. A country with a
+Shares mode keeps the map's total land area at `total_area`. A region with a
 constant value can shrink if the total grows. Hover values include its share.
 
-## Missing values and changing countries
+## Missing values and changing regions
 
 Missing rows or values are errors by default. To estimate them before simulation:
 
@@ -57,7 +57,7 @@ country-cartogram-timeline history.csv --missing-values interpolate \
 - `interpolate`: fill interior gaps linearly by year; hold the nearest value before or after the known range.
 - `carry`: hold the previous value inside gaps; use the first known value for earlier years.
 
-Each country needs at least one known positive value. Zero, negative, and
+Each region needs at least one known positive value. Zero, negative, and
 nonfinite values remain errors. Filling uses only years present in the CSV;
 it does not create missing calendar years.
 
@@ -123,9 +123,8 @@ The first frame matches the checkpoint, with velocities reset to zero.
 
 A 3D checkpoint also needs `--initial-values` pointing to the earlier paired CSV.
 Set the same explicit `height_scale` to compare heights across separate exports.
-Changing country coverage, groups, shape preparation, or boundaries requires a
-fresh layout. For checkpoints predating `shape_error`, set it to `0` and keep
-the companion audit.
+Changing region coverage, groups, shape preparation, or boundaries requires a
+fresh layout. Projection and source CRS must also stay the same.
 
 For a single update, use:
 
@@ -150,7 +149,7 @@ This command normalizes to its own total. To preserve area per unit, set
 | `timeline.gif` | Optional annual-map slideshow |
 
 Shapes and collision hulls are reused across periods. The viewer stores one mesh
-per country and updates positions and scales during playback.
+per region and updates positions and scales during playback.
 
 Check each period's `overlap_pairs`, `max_relative_area_error`, and
 `packing.equilibrium_converged`. Valid areas and gaps can still accompany an

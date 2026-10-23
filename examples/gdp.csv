@@ -1,4 +1,4 @@
-country_code,value,name,cluster,parent,year
+id,value,name,group,parent,year
 ABW,3056,Aruba,Europe,NLD,2017
 AFG,19291,Afghanistan,Asia,,2019
 AGO,88815,Angola,Africa,,2019

@@ -47,7 +47,7 @@ def main():
         "python": platform.python_version(),
         "platform": platform.platform(),
         "versions": first["versions"],
-        "country_count": first["country_count"],
+        "region_count": first["region_count"],
         "layout_sha256": first["layout_sha256"],
         "input_sha256": first["input_sha256"],
         "html_js": args.html_js,

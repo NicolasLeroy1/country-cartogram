@@ -1,6 +1,6 @@
 # Country Cartogram
 
-Make country cartograms from CSV data. Each country's area represents its value.
+Make cartograms from polygon maps and CSV data. Each region's area represents its value.
 Export PNG, SVG, or PDF, or generate an interactive HTML time series.
 
 [![40 years of GDP](docs/gallery/gdp-1985-2024.png)](docs/gallery/gdp-1985-2024.html)
@@ -22,10 +22,10 @@ and [growth animation](docs/gallery/gdp.growth.gif) examples.
 
 ## Use your own data
 
-Create `values.csv` with country codes and quantities:
+Create `values.csv` with region IDs and quantities:
 
 ```csv
-country_code,value
+id,value
 FRA,42
 DEU,60
 ITA,35
@@ -35,10 +35,23 @@ ITA,35
 country-cartogram values.csv --out output/my_map
 ```
 
-Use codes from the [country catalog](src/country_cartogram/data/country_catalog.csv).
+For the bundled world map, use IDs from the [region catalog](src/country_cartogram/data/region_catalog.csv).
 Values must be finite and non-negative. Zero values are omitted.
-Optional `name`, `cluster`, and `parent` columns set names, groups, and parent links.
+Optional `name`, `group`, and `parent` columns set labels and grouping.
 See [usage](docs/usage.md) for colors, titles, labels, and other settings.
+
+## Use another map
+
+Supply a GeoJSON file with an `id` for each polygon region. Match those IDs in
+its value CSV. Use `--projection local` for fantasy maps or drawing coordinates:
+
+```bash
+country-cartogram-timeline examples/fantasy.csv --boundaries examples/fantasy.geojson \
+  --config examples/fantasy.json --viewer-only --out output/fantasy
+```
+
+Open `output/fantasy/timeline.html`. Geographic maps can choose a projection with
+`--projection EPSG:3035`, for example. See [map inputs](docs/usage.md#base-maps).
 
 ## 40 years of GDP
 
@@ -80,7 +93,7 @@ Choose a new output name to keep earlier results; commands overwrite matching fi
 ## Experimental 3D
 
 With two quantities, area shows the first, height shows second ÷ first, and
-volume shows the second. Small countries with high ratios can form tall columns
+volume shows the second. Small regions with high ratios can form tall columns
 that are hard to compare. The viewer includes transparency, a top view, and a values table.
 
 See the [3D guide](docs/3d.md) and [3D timeline example](docs/gallery/population-gdp-timeline.html).
@@ -90,7 +103,6 @@ See the [3D guide](docs/3d.md) and [3D timeline example](docs/gallery/population
 Shapes are simplified before simulation with a default 2% shape error budget.
 Their areas are restored to preserve the input proportions.
 See [the algorithm](docs/algorithm.md) and [development guide](CONTRIBUTING.md).
-For national or fantasy maps and other projections, see [other base maps](docs/usage.md#other-base-maps).
 
 Static examples use historical Natural Earth values; population timelines use
 synthetic growth. The GDP timeline uses World Bank observations and marked estimates:

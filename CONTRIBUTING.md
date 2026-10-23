@@ -16,10 +16,12 @@ entry points. Generated work belongs in the ignored `output/` directory.
 
 | Files | Responsibility |
 | --- | --- |
-| `configuration.py`, `geometry.py` | Settings, projection, shape approximation, island placement |
+| `maps.py`, `values.py` | Map adapters, projection, CSV validation |
+| `configuration.py`, `geometry.py` | Settings, shape approximation, part placement |
 | `progressive.py`, `physics.py` | Growth shapes, forces, collision solving |
 | `continuation.py`, `timeline.py` | Checkpoints and ordered observations |
-| `pipeline.py`, `evolution.py`, `restyle.py` | Static figures, simulation GIFs, restyling |
+| `pipeline.py` | Shared simulation and export orchestration |
+| `rendering.py`, `evolution.py`, `restyle.py` | Static figures, simulation GIFs, restyling |
 | `extrusion.py`, `viewer.py` | Meshes, numerical checks, compressed viewer data |
 | `web/viewer.js`, `web/viewer.css`, `web/viewer.html`, `web/surface.glsl` | Browser controls, layout, Perlin normals |
 
@@ -61,7 +63,7 @@ NODE_PATH=/path/to/node_modules node scripts/check_timeline.cjs output/gdp-1985-
 ```
 
 Set `CHROME_PATH` if needed. The check compares opaque and translucent pixels,
-reverses country draw order, tests opacity across camera changes, and checks
+reverses region draw order, tests opacity across camera changes, and checks
 shader errors and network requests. Also inspect playback, hover, group filters,
 mobile layout, and PNG downloads. Browser **Save image** captures the translucent
 material; Matplotlib previews use opaque materials.
@@ -77,3 +79,7 @@ the benchmark JSON and removes temporary exports.
 `scripts/prepare_gdp_timeline.py` regenerates the 40-year GDP example offline
 from its pinned World Bank snapshot. Use `--refresh` only when intentionally
 updating the source observations; provenance records hashes and retrieval time.
+
+Custom-map tests cover local coordinates, holes and islands, national projections,
+single-period playback, continuation, and 3D reuse. Keep map adapters in `maps.py`;
+the solver and rendering code must not interpret source-specific properties.

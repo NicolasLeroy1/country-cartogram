@@ -14,16 +14,17 @@ import numpy as np
 import shapely
 from shapely.geometry import shape
 
-from .configuration import DEFAULTS, country_color, load_config
+from .configuration import DEFAULTS, region_color, load_config
+from .values import read_quantity_pairs
 
 
 DEFAULTS_3D = {
-    "title": "Country cartogram",
+    "title": "Cartogram",
     "area_label": "First variable",
     "volume_label": "Second variable",
     "height_label": "Second / first variable",
     "source_note": "User-supplied quantities",
-    # One common factor, never a separate normalization for each country.
+    # One common factor, never a separate normalization for each region.
     "height_scale": None,
     "opacity": 0.4,
     "surface_noise": 0.2,
@@ -66,50 +67,6 @@ def load_3d_config(path=None):
         ):
             raise ValueError(f"{key} must be between {lower} and {upper}")
     return config
-
-
-def read_quantity_pairs(path, area_column, volume_column):
-    """Read explicit A and B quantities; missing is never silently zero."""
-    if area_column == volume_column:
-        raise ValueError("Area and volume columns must be different")
-    pairs = {}
-    with Path(path).open(newline="", encoding="utf-8-sig") as stream:
-        reader = csv.DictReader(stream)
-        required = {"country_code", area_column, volume_column}
-        if not reader.fieldnames or not required.issubset(reader.fieldnames):
-            raise ValueError(f"CSV needs columns: {sorted(required)}")
-        if len(reader.fieldnames) != len(set(reader.fieldnames)):
-            raise ValueError("CSV has duplicate column names")
-        for line, source in enumerate(reader, 2):
-            code = (source.get("country_code") or "").strip().upper()
-            if not code or code in pairs:
-                raise ValueError(
-                    f"Line {line}: blank or duplicate country_code {code!r}"
-                )
-            values = []
-            for column in (area_column, volume_column):
-                try:
-                    value = float(source[column])
-                except (ValueError, TypeError):
-                    raise ValueError(
-                        f"Line {line}: {code} needs a numeric {column}; blanks are not zero"
-                    ) from None
-                if not math.isfinite(value) or value < 0:
-                    raise ValueError(
-                        f"Line {line}: {column} must be finite and non-negative"
-                    )
-                values.append(value)
-            a, b = values
-            if a == 0 and b > 0:
-                raise ValueError(
-                    f"{code}: positive volume with zero area cannot be represented"
-                )
-            if a > 0 and not math.isfinite(b / a):
-                raise ValueError(f"{code}: second / first ratio overflows")
-            pairs[code] = (a, b)
-    if not any(a > 0 for a, _ in pairs.values()):
-        raise ValueError("At least one strictly positive area quantity is required")
-    return pairs
 
 
 def extrude_polygon(geometry, height):
@@ -208,10 +165,10 @@ def build_scene(layout, pairs, *, config=None, style=None):
     """Return meshes and a report. Does not move or rescale any footprint."""
     config = {**DEFAULTS_3D, **(config or {})}
     style = style or DEFAULTS
-    rows = layout.get("countries", [])
-    codes = [row["country_code"] for row in rows]
+    rows = layout.get("regions", [])
+    codes = [row["id"] for row in rows]
     if not rows or len(codes) != len(set(codes)):
-        raise ValueError("Layout needs nonempty, unique country records")
+        raise ValueError("Layout needs nonempty, unique region records")
     positive = {code for code, (a, _) in pairs.items() if a > 0}
     if set(codes) != positive:
         raise ValueError(
@@ -221,12 +178,12 @@ def build_scene(layout, pairs, *, config=None, style=None):
         )
     geometries = []
     for row in rows:
-        a, b = pairs[row["country_code"]]
+        a, b = pairs[row["id"]]
         if not math.isfinite(row["value"]) or not math.isclose(
             row["value"], a, rel_tol=1e-12, abs_tol=0
         ):
             raise ValueError(
-                f"{row['country_code']}: area quantity differs from saved layout; repack first"
+                f"{row['id']}: area quantity differs from saved layout; repack first"
             )
         geometry = shape(row["geometry"])
         if (
@@ -237,7 +194,7 @@ def build_scene(layout, pairs, *, config=None, style=None):
             or not math.isfinite(geometry.area)
             or geometry.area <= 0
         ):
-            raise ValueError(f"{row['country_code']}: invalid 2D footprint")
+            raise ValueError(f"{row['id']}: invalid 2D footprint")
         geometries.append(geometry)
     try:
         area_scale = math.fsum(g.area for g in geometries) / math.fsum(
@@ -266,9 +223,9 @@ def build_scene(layout, pairs, *, config=None, style=None):
         raise ValueError(
             "Volume normalization overflows or underflows; change input units or height_scale"
         )
-    countries = []
+    regions = []
     for row, geometry in zip(rows, geometries):
-        code = row["country_code"]
+        code = row["id"]
         a, b = pairs[code]
         ratio = b / a
         height = height_scale * ratio
@@ -297,12 +254,12 @@ def build_scene(layout, pairs, *, config=None, style=None):
             raise RuntimeError(
                 f"{code}: mesh volume is not proportional to the second variable"
             )
-        countries.append(
+        regions.append(
             {
-                "country_code": code,
+                "id": code,
                 "name": row["name"],
-                "cluster": row["cluster"],
-                "color": country_color(row, style),
+                "group": row["group"],
+                "color": region_color(row, style),
                 "value_status": row.get("value_status", "observed"),
                 "value_note": row.get("value_note", ""),
                 "area_value": a,
@@ -319,7 +276,7 @@ def build_scene(layout, pairs, *, config=None, style=None):
         )
     report = {
         "schema_version": 1,
-        "country_count": len(countries),
+        "region_count": len(regions),
         "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
         "encoding": {
             "area": "area_scale * first variable",
@@ -333,36 +290,34 @@ def build_scene(layout, pairs, *, config=None, style=None):
         if config["height_scale"] is None
         else "explicit",
         "extent": extent,
-        "max_height": max(c["height"] for c in countries),
-        "max_relative_area_error": max(c["relative_area_error"] for c in countries),
-        "max_relative_volume_error": max(c["relative_volume_error"] for c in countries),
+        "max_height": max(c["height"] for c in regions),
+        "max_relative_area_error": max(c["relative_area_error"] for c in regions),
+        "max_relative_volume_error": max(c["relative_volume_error"] for c in regions),
         "max_mesh_relative_volume_error": max(
-            c["mesh_relative_volume_error"] for c in countries
+            c["mesh_relative_volume_error"] for c in regions
         ),
         "all_positive_height_meshes_closed": all(
-            c["closed_mesh"] for c in countries if c["height"] > 0
+            c["closed_mesh"] for c in regions if c["height"] > 0
         ),
-        "zero_height_country_codes": [
-            c["country_code"] for c in countries if c["height"] == 0
-        ],
-        "zero_area_zero_volume_country_codes": sorted(
+        "zero_height_region_ids": [c["id"] for c in regions if c["height"] == 0],
+        "zero_area_zero_volume_region_ids": sorted(
             c for c, (a, _) in pairs.items() if a == 0
         ),
-        "mesh_vertex_count": sum(len(c["vertices"]) for c in countries),
-        "mesh_triangle_count": sum(len(c["faces"]) for c in countries),
+        "mesh_vertex_count": sum(len(c["vertices"]) for c in regions),
+        "mesh_triangle_count": sum(len(c["faces"]) for c in regions),
         "config": config,
         "versions": {"shapely": shapely.__version__, "numpy": np.__version__},
     }
-    return countries, report
+    return regions, report
 
 
-def write_html(countries, report, path, *, html_js="inline"):
+def write_html(regions, report, path, *, html_js="inline"):
     from .viewer import write_static_viewer
 
-    write_static_viewer(countries, report, path, html_js=html_js)
+    write_static_viewer(regions, report, path, html_js=html_js)
 
 
-def write_preview(countries, report, path, dpi=160):
+def write_preview(regions, report, path, dpi=160):
     """Static orthographic view of the exact same meshes, without a browser."""
     import matplotlib
 
@@ -383,13 +338,13 @@ def write_preview(countries, report, path, dpi=160):
         color="#536b82",
     )
     ax = fig.add_axes([0.01, 0.17, 0.96, 0.75], projection="3d", facecolor="#f5f8fc")
-    for country in countries:
-        triangles = country["vertices"][country["faces"]]
+    for region in regions:
+        triangles = region["vertices"][region["faces"]]
         ax.add_collection3d(
             Poly3DCollection(
                 triangles,
-                facecolors=country["color"],
-                edgecolors=country["color"],
+                facecolors=region["color"],
+                edgecolors=region["color"],
                 linewidths=0,
                 antialiased=False,
                 shade=True,
@@ -415,7 +370,7 @@ def write_preview(countries, report, path, dpi=160):
         axis.pane.set_edgecolor("#f5f8fc")
         axis.line.set_color("#c9d6e3")
     ax.grid(False)
-    groups = {c["cluster"]: c["color"] for c in countries}
+    groups = {c["group"]: c["color"] for c in regions}
     fig.legend(
         handles=[
             Patch(color=color, label=group) for group, color in sorted(groups.items())
@@ -452,7 +407,7 @@ def export_3d(
 ):
     """Export experimental 3D without rerunning physics; return its audit.
 
-    Country coverage and first quantities must match the saved layout. The
+    Region coverage and first quantities must match the saved layout. The
     second quantity can change. ``output`` is a filename stem, defaulting to
     the layout's stem. Keep the companion layout audit for inherited colors.
     Heights are linear ratios; small footprints with large ratios form spikes.
@@ -477,7 +432,7 @@ def export_3d(
             ),
         }
     loaded = time.perf_counter()
-    countries, report = build_scene(layout, pairs, config=config, style=style)
+    regions, report = build_scene(layout, pairs, config=config, style=style)
     meshed = time.perf_counter()
     from .viewer import THREE_VERSION
 
@@ -503,16 +458,16 @@ def export_3d(
     def path(suffix):
         return stem.parent / (stem.name + suffix)
 
-    write_html(countries, report, path(".3d.html"), html_js=html_js)
+    write_html(regions, report, path(".3d.html"), html_js=html_js)
     html_done = time.perf_counter()
     if preview:
-        write_preview(countries, report, path(".3d.png"))
+        write_preview(regions, report, path(".3d.png"))
     preview_done = time.perf_counter()
-    fields = [k for k in countries[0] if k not in ("vertices", "faces")]
+    fields = [k for k in regions[0] if k not in ("vertices", "faces")]
     with path(".3d.metrics.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
-        writer.writerows({k: c[k] for k in fields} for c in countries)
+        writer.writerows({k: c[k] for k in fields} for c in regions)
     report["html_bytes"] = path(".3d.html").stat().st_size
     report["timings_seconds"] = {
         "load": loaded - started,
@@ -539,7 +494,7 @@ def main():
     parser.add_argument(
         "csv",
         type=Path,
-        help="CSV with first and second quantities keyed by country_code",
+        help="CSV with first and second quantities keyed by id",
     )
     parser.add_argument("--area-column", default="value")
     parser.add_argument("--volume-column", required=True)
@@ -547,7 +502,7 @@ def main():
         "--config", type=Path, help="3D titles, labels, source, and common height_scale"
     )
     parser.add_argument(
-        "--style", type=Path, help="Optional 2D configuration for cluster colors"
+        "--style", type=Path, help="Optional 2D configuration for group colors"
     )
     parser.add_argument(
         "--out", type=Path, help="Output stem; defaults to the layout stem"

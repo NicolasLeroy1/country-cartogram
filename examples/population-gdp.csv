@@ -1,4 +1,4 @@
-country_code,population,gdp_usd,name,cluster,parent,population_year,gdp_year
+id,population,gdp_usd,name,group,parent,population_year,gdp_year
 ABW,106314,3056000000,Aruba,Europe,NLD,2019,2017
 AFG,38041754,19291000000,Afghanistan,Asia,,2019,2019
 AGO,31825295,88815000000,Angola,Africa,,2019,2019

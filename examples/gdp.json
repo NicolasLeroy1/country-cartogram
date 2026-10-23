@@ -6,7 +6,7 @@
   "divisor": 1000000,
   "suffix": "T",
   "decimals": 1,
-  "label_countries": [
+  "label_regions": [
     "AUS",
     "BRA",
     "IND",

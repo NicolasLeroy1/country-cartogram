@@ -4,7 +4,8 @@ import numpy as np
 import shapely
 import matplotlib.pyplot as plt
 from PIL import Image
-from .pipeline import add_geometry, country_color
+from .rendering import add_geometry
+from .configuration import region_color
 
 
 def render_evolution(frames, rows, config, stem, initial_label="Geographic start"):
@@ -17,7 +18,7 @@ def render_evolution(frames, rows, config, stem, initial_label="Geographic start
         fig, ax = plt.subplots(figsize=(12, 7), facecolor=config["background"], dpi=90)
         ax.set_facecolor(config["background"])
         for geometry, row in zip(frame["geometries"], rows):
-            add_geometry(ax, geometry, country_color(row, config))
+            add_geometry(ax, geometry, region_color(row, config))
         ax.set_xlim(xmin - padding, xmax + padding)
         ax.set_ylim(ymin - padding, ymax + padding)
         ax.set_aspect("equal")
@@ -35,7 +36,7 @@ def render_evolution(frames, rows, config, stem, initial_label="Geographic start
         fig.text(
             0.5,
             0.04,
-            "Local polygon repulsion + long-range attraction within each cluster",
+            "Local polygon repulsion + long-range attraction within each group",
             ha="center",
             fontsize=10,
             color="#4d6576",
@@ -65,14 +66,14 @@ def render_evolution(frames, rows, config, stem, initial_label="Geographic start
         axes, chosen, [initial_label, "Halfway through resizing", "After settling"]
     ):
         for geometry, row in zip(frames[index]["geometries"], rows):
-            add_geometry(ax, geometry, country_color(row, config))
+            add_geometry(ax, geometry, region_color(row, config))
         ax.set_xlim(xmin - padding, xmax + padding)
         ax.set_ylim(ymin - padding, ymax + padding)
         ax.set_aspect("equal")
         ax.axis("off")
         ax.set_title(title, fontsize=13, color=config["ink"])
     fig.suptitle(
-        "Grow and shrink in place; let contact and attraction move the countries",
+        "Grow and shrink in place; let contact and attraction move the regions",
         fontsize=19,
         color=config["ink"],
         weight="bold",

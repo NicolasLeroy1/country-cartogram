@@ -1,4 +1,4 @@
-year,country_code,value,name,cluster,parent,source_population_year
+year,id,value,name,group,parent,source_population_year
 2020,ABW,106314.0,Aruba,Europe,NLD,2019
 2020,AFG,38041754.0,Afghanistan,Asia,,2019
 2020,AGO,31825295.0,Angola,Africa,,2019

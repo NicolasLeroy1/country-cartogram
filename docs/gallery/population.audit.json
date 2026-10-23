@@ -1,131 +1,150 @@
 {
-  "max_relative_area_error": 2.3447910280083306e-13,
-  "minimum_country_distance": 0.41900001789375424,
+  "max_relative_area_error": 8.203437928955282e-13,
+  "minimum_region_distance": 0.21904618565205655,
+  "minimum_group_distance": 3.6195681788936516,
   "overlap_pairs": [],
   "all_geometries_valid": true,
+  "shape_approximation": {
+    "stage": "before simulation",
+    "relative_error_budget": 0.02,
+    "source_outline_vertices": 83309,
+    "prepared_outline_vertices": 23672,
+    "max_relative_symmetric_difference": 0.01999895819699516
+  },
   "coverage": {
-    "omitted_country_codes": [
+    "omitted_region_ids": [
       "ATC"
     ],
-    "zero_country_codes": [],
-    "sum_of_values": 7675051259.3
+    "zero_region_ids": [],
+    "sum_of_values": 7675051259.3,
+    "estimated_region_ids": []
   },
   "packing": {
-    "method": "geographic_growth_rigid_body_physics",
+    "method": "growth_rigid_body_physics",
     "engine": "Pymunk/Chipmunk",
     "engine_version": "7.3.1",
-    "convex_piece_count": 695,
+    "convex_piece_count": 1390,
+    "group_fixture_count": 695,
+    "cached_collision_part_count": 0,
+    "collision_vertex_count": 19304,
+    "fixture_build_seconds": 0.14127445900521707,
     "collision_mode": "hull",
     "collision_tolerance": 0.12,
-    "maximum_final_collision_outline_error": 15.536438380434062,
+    "maximum_final_collision_outline_error": 15.505612959731831,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settling_iterations": 4432,
+    "settling_iterations": 5168,
     "equilibrium_converged": true,
-    "max_final_step_movement": 0.001970590081547983,
+    "max_final_step_movement": 0.0019251974997297647,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
-    "initial_geographic_scale": 0.8643869262548722,
+    "initial_map_scale": 0.8642730652382962,
     "growth_trace": [
       {
         "progress": 0.007250000000000001,
-        "max_step_movement": 0.11326769333700096
+        "max_step_movement": 1.6389462149242082
       },
       {
         "progress": 0.028000000000000004,
-        "max_step_movement": 0.2083181168737187
+        "max_step_movement": 0.14533730613927417
       },
       {
         "progress": 0.06075,
-        "max_step_movement": 0.14810944758080238
+        "max_step_movement": 0.14871726140354663
       },
       {
         "progress": 0.10400000000000002,
-        "max_step_movement": 0.14216078219808176
+        "max_step_movement": 0.5714912016349499
       },
       {
         "progress": 0.15625,
-        "max_step_movement": 0.13321054060985904
+        "max_step_movement": 0.13765631183638627
       },
       {
         "progress": 0.216,
-        "max_step_movement": 0.12371562274839834
+        "max_step_movement": 0.1291009080177812
       },
       {
         "progress": 0.28174999999999994,
-        "max_step_movement": 0.11949306779300649
+        "max_step_movement": 0.09996974526237566
       },
       {
         "progress": 0.3520000000000001,
-        "max_step_movement": 0.0855315140445141
+        "max_step_movement": 0.7147260540858984
       },
       {
         "progress": 0.4252500000000001,
-        "max_step_movement": 0.08667131247722512
+        "max_step_movement": 0.07959263148685607
       },
       {
         "progress": 0.5,
-        "max_step_movement": 0.1446080062731493
+        "max_step_movement": 0.22060954248008774
       },
       {
         "progress": 0.5747500000000001,
-        "max_step_movement": 0.08854513147269315
+        "max_step_movement": 0.14073719342207863
       },
       {
         "progress": 0.648,
-        "max_step_movement": 0.09310670085010891
+        "max_step_movement": 0.2877389457963257
       },
       {
         "progress": 0.71825,
-        "max_step_movement": 0.13586188500099267
+        "max_step_movement": 0.10649323540449127
       },
       {
         "progress": 0.7839999999999999,
-        "max_step_movement": 0.1296416597957015
+        "max_step_movement": 0.10548734546108363
       },
       {
         "progress": 0.84375,
-        "max_step_movement": 0.19629214537880627
+        "max_step_movement": 0.11405676548004536
       },
       {
         "progress": 0.8960000000000001,
-        "max_step_movement": 0.46119108564688693
+        "max_step_movement": 0.4006637060739421
       },
       {
         "progress": 0.9392499999999999,
-        "max_step_movement": 0.47094172070791435
+        "max_step_movement": 0.5434893362907849
       },
       {
         "progress": 0.972,
-        "max_step_movement": 0.3808898071874627
+        "max_step_movement": 0.4779947053495275
       },
       {
         "progress": 0.99275,
-        "max_step_movement": 0.2699716000479448
+        "max_step_movement": 0.34611648448616955
       },
       {
         "progress": 1.0,
-        "max_step_movement": 0.1690128209820461
+        "max_step_movement": 0.21555733068938066
       }
     ],
-    "elapsed_seconds": 31.11692785000014
+    "elapsed_seconds": 15.874292145002983,
+    "mean_displacement_from_start": 22.968592748662704,
+    "max_displacement_from_start": 236.27225362730132
   },
-  "omitted_labels": [],
+  "omitted_labels": [
+    "PAK",
+    "PHL"
+  ],
   "config": {
-    "title": "The world by population",
-    "subtitle": "The same geography, resized by a different quantity",
-    "source_note": "Demo only: Natural Earth POP_EST attributes, mixed historical years; not current population estimates.",
+    "title": "Population by country",
+    "source_crs": "EPSG:4326",
+    "projection": "EPSG:8857",
+    "subtitle": "Country area represents population",
+    "source_note": "Natural Earth historical population; mixed years.",
+    "value_label": "Quantity",
     "prefix": "",
     "divisor": 1000000,
     "suffix": "M",
     "decimals": 0,
     "total_area": 10000,
-    "country_gap": 0.4,
-    "cluster_gap": 2.5,
-    "geographic_spread": 0.72,
-    "geographic_pull": 0.002,
-    "cluster_pull": 0.006,
-    "layout_mode": "growth",
+    "region_gap": 0.2,
+    "group_gap": 3.6,
+    "anchor_pull": 0.002,
+    "group_pull": 0.006,
     "growth_steps": 80,
     "relax_per_step": 20,
     "settle_steps": 6000,
@@ -135,23 +154,21 @@
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
-    "iterations": 250,
     "territory_distance": 12,
     "parent_pull": 0.04,
     "satellite_distance": 1.4,
     "min_part_fraction": 0.001,
     "max_parts": 24,
     "simplify": 0.0015,
+    "shape_error": 0.02,
     "labels": 14,
-    "label_countries": [
+    "label_regions": [
       "AUS",
       "BRA",
       "ZAF"
     ],
     "label_offsets": {},
-    "label_aliases": {
-      "GBR": "UK"
-    },
+    "label_aliases": {},
     "background": "#edf8fa",
     "ink": "#10243a",
     "colors": {
@@ -161,41 +178,20 @@
       "Africa": "#edc54f",
       "Asia": "#e55261",
       "Oceania": "#f29b45"
-    },
-    "cluster_anchors": {
-      "North America": [
-        -105,
-        42
-      ],
-      "South America": [
-        -62,
-        -18
-      ],
-      "Europe": [
-        12,
-        52
-      ],
-      "Africa": [
-        18,
-        0
-      ],
-      "Asia": [
-        105,
-        32
-      ],
-      "Oceania": [
-        140,
-        -28
-      ]
     }
   },
   "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
-  "input_sha256": "c17670784d0782cb863d05b0532ef16180e56c4f61dc9e26436ef4c97a38f9e1",
+  "input_sha256": "9f6ab06244f262dd382fab77253ca41c53c581b891a8a363d8d55a3c47894c39",
   "boundaries_sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+  "map": {
+    "label": "Natural Earth boundaries",
+    "source_crs": "EPSG:4326",
+    "projection": "EPSG:8857"
+  },
   "versions": {
     "python": "3.12.14",
     "numpy": "2.5.4",
     "shapely": "2.2.0",
-    "matplotlib": "3.10.8"
+    "matplotlib": "3.11.2"
   }
 }

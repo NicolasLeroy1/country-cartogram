@@ -1,4 +1,4 @@
-"""Continue 2D country cartograms through an ordered series of observations."""
+"""Continue 2D region cartograms through an ordered series of observations."""
 
 from __future__ import annotations
 
@@ -13,12 +13,15 @@ from pathlib import Path
 import numpy as np
 from shapely.geometry import shape
 
-from .configuration import country_color, load_config
-from .pipeline import ROOT, load_catalog, read_values, run, add_geometry
+from .configuration import region_color, load_config
+from .pipeline import run
+from .maps import DEFAULT_BOUNDARIES, load_map, add_map_arguments
+from .values import read_table, read_values, read_quantity_pairs
+from .rendering import add_geometry
 
 
 def fill_missing_periods(periods, value_column="value", method="interpolate"):
-    """Keep a fixed cohort, estimating gaps from each country's known values.
+    """Keep a fixed cohort, estimating gaps from each region's known values.
 
     Interpolate interior gaps, or hold the previous value in carry mode. Outside
     the observed range hold the nearest value. Supplied positive values and
@@ -30,7 +33,7 @@ def fill_missing_periods(periods, value_column="value", method="interpolate"):
     known, templates = {}, {}
     for year, rows in sorted(periods.items()):
         for row in rows:
-            code = row["country_code"].strip().upper()
+            code = row["id"].strip().upper()
             templates.setdefault(code, row)
             raw = row.get(value_column)
             if raw is None or str(raw).strip() == "":
@@ -46,7 +49,7 @@ def fill_missing_periods(periods, value_column="value", method="interpolate"):
     unknown = sorted(set(templates) - set(known))
     if unknown:
         raise ValueError(
-            f"Cannot estimate countries with no known positive value: {unknown}"
+            f"Cannot estimate regions with no known positive value: {unknown}"
         )
     completed = {year: [] for year in sorted(periods)}
     for code in sorted(known):
@@ -84,7 +87,7 @@ def fill_missing_periods(periods, value_column="value", method="interpolate"):
                     "value_status": status,
                     "value_note": note,
                 }
-            row["country_code"] = code
+            row["id"] = code
             completed[year].append(row)
     return completed
 
@@ -93,65 +96,49 @@ def read_timeline(
     path,
     time_column="year",
     value_column="value",
-    min_periods=2,
     missing_values="error",
 ):
     """Read integer periods, optionally filling missing inputs before any solve."""
     periods, seen = {}, set()
     if missing_values not in {"error", "interpolate", "carry"}:
         raise ValueError("missing_values must be error, interpolate, or carry")
-    with Path(path).open(newline="", encoding="utf-8-sig") as stream:
-        reader = csv.DictReader(stream)
-        if not reader.fieldnames or not {
-            "country_code",
-            time_column,
-            value_column,
-        }.issubset(reader.fieldnames):
-            raise ValueError(
-                f"Timeline CSV needs country_code, {time_column}, and {value_column}"
+    fields, sources = read_table(path, {"id", time_column, value_column})
+    fields = [key for key in fields if key != time_column]
+    for line, source in enumerate(sources, 2):
+        try:
+            year = int(source[time_column])
+            raw = source[value_column]
+            value = (
+                None
+                if missing_values != "error" and not (raw or "").strip()
+                else float(raw)
             )
-        if len(reader.fieldnames) != len(set(reader.fieldnames)):
-            raise ValueError("Duplicate CSV column names")
-        fields = [key for key in reader.fieldnames if key != time_column]
-        for line, source in enumerate(reader, 2):
-            try:
-                year = int(source[time_column])
-                raw = source[value_column]
-                value = (
-                    None
-                    if missing_values != "error" and not (raw or "").strip()
-                    else float(raw)
-                )
-            except (ValueError, TypeError):
-                raise ValueError(
-                    f"Line {line}: period must be an integer and quantity must be numeric"
-                ) from None
-            code = (source.get("country_code") or "").strip().upper()
-            if not code or (year, code) in seen:
-                raise ValueError(
-                    f"Line {line}: blank or duplicate country in period {year}"
-                )
-            if value is not None and (not math.isfinite(value) or value <= 0):
-                raise ValueError(
-                    f"Line {line}: timeline quantities must be finite and positive; use a consistent positive cohort"
-                )
-            seen.add((year, code))
-            periods.setdefault(year, []).append({key: source[key] for key in fields})
-    if len(periods) < min_periods:
-        raise ValueError(
-            "A timeline needs at least two periods; use --initial-layout for a single update"
-        )
+        except (ValueError, TypeError):
+            raise ValueError(
+                f"Line {line}: period must be an integer and quantity must be numeric"
+            ) from None
+        code = (source.get("id") or "").strip().upper()
+        if not code or (year, code) in seen:
+            raise ValueError(f"Line {line}: blank or duplicate region in period {year}")
+        if value is not None and (not math.isfinite(value) or value <= 0):
+            raise ValueError(
+                f"Line {line}: timeline quantities must be finite and positive; use a consistent positive cohort"
+            )
+        seen.add((year, code))
+        periods.setdefault(year, []).append({key: source[key] for key in fields})
+    if not periods:
+        raise ValueError("At least one period is required")
     if missing_values != "error":
         periods = fill_missing_periods(periods, value_column, missing_values)
         fields = list(dict.fromkeys([*fields, "value_status", "value_note"]))
     cohort = None
     for year, rows in sorted(periods.items()):
-        codes = {r["country_code"].strip().upper() for r in rows}
+        codes = {r["id"].strip().upper() for r in rows}
         if cohort is None:
             cohort = codes
         elif codes != cohort:
             raise ValueError(
-                f"Country coverage changes in {year}; use a consistent positive cohort"
+                f"Region coverage changes in {year}; use a consistent positive cohort"
             )
     return fields, dict(sorted(periods.items()))
 
@@ -165,8 +152,8 @@ def write_snapshot_gif(layouts, years, config, bounds, path):
     for layout, year in zip(layouts, years):
         fig, ax = plt.subplots(figsize=(12, 7), dpi=90, facecolor=config["background"])
         ax.set_facecolor(config["background"])
-        for row in layout["countries"]:
-            add_geometry(ax, shape(row["geometry"]), country_color(row, config))
+        for row in layout["regions"]:
+            add_geometry(ax, shape(row["geometry"]), region_color(row, config))
         ax.set(xlim=(bounds[0], bounds[2]), ylim=(bounds[1], bounds[3]), aspect="equal")
         ax.axis("off")
         fig.suptitle(f"{config['title']} · {year}", fontsize=19, color=config["ink"])
@@ -193,7 +180,7 @@ def run_timeline(
     time_column="year",
     value_column="value",
     normalization="fixed",
-    boundaries=ROOT / "data/countries.geojson",
+    boundaries=DEFAULT_BOUNDARIES,
     formats=("svg", "png"),
     gif=False,
     dpi=160,
@@ -204,6 +191,8 @@ def run_timeline(
     html_js="inline",
     initial_values=None,
     missing_values="error",
+    source_crs=None,
+    projection=None,
 ):
     """Continue layouts across integer periods and return the series audit.
 
@@ -227,28 +216,27 @@ def run_timeline(
         )
     if initial_layout and volume_column and not initial_values:
         raise ValueError("A 3D checkpoint needs initial_values with both quantities")
-    from .extrusion import load_3d_config, read_quantity_pairs
+    from .extrusion import load_3d_config
 
     scene_config = load_3d_config(config_3d)
-    config = load_config(config_path)
+    config = load_config(config_path, source_crs=source_crs, projection=projection)
     if config_3d is None:
         scene_config.update(title=config["title"], source_note=config["source_note"])
-    if config["layout_mode"] != "growth":
-        raise ValueError("Timelines require growth mode")
     fields, periods = read_timeline(
         csv_path,
         time_column,
         value_column,
-        min_periods=1 if initial_layout else 2,
         missing_values=missing_values,
     )
     output = Path(output)
     inputs = output / "inputs"
     inputs.mkdir(parents=True, exist_ok=True)
-    catalog = load_catalog(boundaries)
+    source = load_map(
+        boundaries, source_crs=config["source_crs"], projection=config["projection"]
+    )
+    catalog = source.catalog
     totals, normalized, pairs_by_year = {}, {}, {}
     collision_cache = {}
-    source = (catalog, hashlib.sha256(Path(boundaries).read_bytes()).hexdigest())
     for year, rows in periods.items():
         with (inputs / f"{year}.csv").open("w", newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream, fieldnames=fields)
@@ -263,15 +251,13 @@ def run_timeline(
                 inputs / f"{year}.csv", value_column, volume_column
             )
         else:
-            pairs_by_year[year] = {
-                r["country_code"]: (r["value"], 0.0) for r in normalized[year]
-            }
+            pairs_by_year[year] = {r["id"]: (r["value"], 0.0) for r in normalized[year]}
     first_rows = next(iter(normalized.values()))
-    grouping = [(r["country_code"], r["cluster"], r["parent"]) for r in first_rows]
+    grouping = [(r["id"], r["group"], r["parent"]) for r in first_rows]
     for year, rows in normalized.items():
-        if [(r["country_code"], r["cluster"], r["parent"]) for r in rows] != grouping:
+        if [(r["id"], r["group"], r["parent"]) for r in rows] != grouping:
             raise ValueError(
-                f"Country groups or parents change in {year}; use a consistent cohort and grouping"
+                f"Region groups or parents change in {year}; use a consistent cohort and grouping"
             )
     # Anchor the scale to the first observation. Appending future periods must
     # not retroactively change all earlier maps or their coordinate frame.
@@ -283,7 +269,7 @@ def run_timeline(
     if initial_layout:
         base = json.loads(Path(initial_layout).read_text(encoding="utf-8"))
         # Match the pipeline's code ordering even for externally reordered JSON.
-        base["countries"].sort(key=lambda r: r["country_code"])
+        base["regions"].sort(key=lambda r: r["id"])
         if str(initial_time) in {str(year) for year in periods}:
             raise ValueError("Checkpoint time must differ from the input periods")
         if volume_column:
@@ -296,16 +282,14 @@ def run_timeline(
             pairs_by_year[initial_time] = initial_pairs
         else:
             pairs_by_year[initial_time] = {
-                r["country_code"]: (r["value"], 0.0) for r in base["countries"]
+                r["id"]: (r["value"], 0.0) for r in base["regions"]
             }
-        base_areas = np.array(
-            [shape(row["geometry"]).area for row in base["countries"]]
-        )
-        values = np.array([row["value"] for row in base["countries"]])
-        if len(base_areas) != len(first_rows) or {
-            r["country_code"] for r in base["countries"]
-        } != {r["country_code"] for r in first_rows}:
-            raise ValueError("Checkpoint country coverage differs from the time series")
+        base_areas = np.array([shape(row["geometry"]).area for row in base["regions"]])
+        values = np.array([row["value"] for row in base["regions"]])
+        if len(base_areas) != len(first_rows) or {r["id"] for r in base["regions"]} != {
+            r["id"] for r in first_rows
+        }:
+            raise ValueError("Checkpoint region coverage differs from the time series")
         if (
             np.any(~np.isfinite(values))
             or np.any(values <= 0)
@@ -330,7 +314,7 @@ def run_timeline(
                 "from": initial_time,
                 "phase": "settled",
                 "progress": 1.0,
-                "positions": [r["position"] for r in base["countries"]],
+                "positions": [r["position"] for r in base["regions"]],
                 "scales": [1.0] * len(base_areas),
             }
         )
@@ -349,7 +333,7 @@ def run_timeline(
         )
 
         def capture(frame):
-            # Store only transforms. Each country coastline is emitted once.
+            # Store only transforms. Each region coastline is emitted once.
             if frame["progress"] == 0:
                 # The preceding endpoint already contains this exact state.
                 return
@@ -383,7 +367,7 @@ def run_timeline(
         if base is None:
             base = layout
             base_areas = np.array(
-                [shape(row["geometry"]).area for row in base["countries"]]
+                [shape(row["geometry"]).area for row in base["regions"]]
             )
             frames.append(
                 {
@@ -391,7 +375,7 @@ def run_timeline(
                     "from": year,
                     "phase": "settled",
                     "progress": 1.0,
-                    "positions": [row["position"] for row in layout["countries"]],
+                    "positions": [row["position"] for row in layout["regions"]],
                     "scales": [1.0] * len(base_areas),
                 }
             )
@@ -407,8 +391,8 @@ def run_timeline(
                 "packing": report["packing"],
                 "shape_approximation": report["shape_approximation"],
                 "max_relative_area_error": report["max_relative_area_error"],
-                "minimum_country_distance": report["minimum_country_distance"],
-                "minimum_cluster_distance": report["minimum_cluster_distance"],
+                "minimum_region_distance": report["minimum_region_distance"],
+                "minimum_group_distance": report["minimum_group_distance"],
                 "overlap_pairs": report["overlap_pairs"],
                 "continuation": report.get("continuation"),
             }
@@ -417,7 +401,7 @@ def run_timeline(
     from .viewer import write_timeline_viewer
 
     quantities = {
-        year: [pairs[row["country_code"]] for row in base["countries"]]
+        year: [pairs[row["id"]] for row in base["regions"]]
         for year, pairs in pairs_by_year.items()
     }
     bounds, viewer_report = write_timeline_viewer(
@@ -435,7 +419,7 @@ def run_timeline(
             **(
                 {
                     initial_time: [
-                        r.get("value_status", "observed") for r in base["countries"]
+                        r.get("value_status", "observed") for r in base["regions"]
                     ]
                 }
                 if initial_layout
@@ -445,7 +429,7 @@ def run_timeline(
         },
         value_notes={
             **(
-                {initial_time: [r.get("value_note", "") for r in base["countries"]]}
+                {initial_time: [r.get("value_note", "") for r in base["regions"]]}
                 if initial_layout
                 else {}
             ),
@@ -459,6 +443,7 @@ def run_timeline(
     manifest = {
         "schema_version": 1,
         "normalization": normalization,
+        "map": {"label": source.label, **source.projection.settings},
         "fixed_area_scale": area_scale if normalization == "fixed" else None,
         "input_sha256": hashlib.sha256(Path(csv_path).read_bytes()).hexdigest(),
         "time_column": time_column,
@@ -470,7 +455,7 @@ def run_timeline(
             for year in periods
         },
         "viewer": viewer_report,
-        "country_count": len(first_rows),
+        "region_count": len(first_rows),
         "frame_count": len(frames),
         "period_count": len(periods),
         "periods": reports,
@@ -494,7 +479,7 @@ def run_timeline(
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("csv", type=Path, help="Long CSV: year, country_code, value")
+    parser.add_argument("csv", type=Path, help="Long CSV: year, id, value")
     parser.add_argument("--time-column", default="year")
     parser.add_argument("--value-column", default="value")
     parser.add_argument("--config", type=Path)
@@ -502,7 +487,7 @@ def main():
         "--missing-values",
         choices=["error", "interpolate", "carry"],
         default="error",
-        help="Fill missing countries/values on a fixed territorial basis and mark estimates grey (default: error)",
+        help="Fill missing regions/values on a fixed territorial basis and mark estimates grey (default: error)",
     )
     parser.add_argument(
         "--out", type=Path, default=Path("output/timeline"), help="Output directory"
@@ -513,9 +498,7 @@ def main():
         default="fixed",
         help="fixed: same area per unit; shares: same total map area (default: fixed)",
     )
-    parser.add_argument(
-        "--boundaries", type=Path, default=ROOT / "data/countries.geojson"
-    )
+    add_map_arguments(parser)
     parser.add_argument(
         "--formats", nargs="+", choices=["svg", "png", "pdf"], default=["svg", "png"]
     )
@@ -567,6 +550,8 @@ def main():
             value_column=args.value_column,
             normalization=args.normalization,
             boundaries=args.boundaries,
+            source_crs=args.source_crs,
+            projection=args.projection,
             formats=() if args.viewer_only else args.formats,
             gif=args.gif,
             dpi=args.dpi,

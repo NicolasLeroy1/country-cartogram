@@ -18,7 +18,7 @@ class GDPDataTests(unittest.TestCase):
         self,
     ):
         catalog = {
-            code: {"name": code, "parent": "", "cluster": "Example"}
+            code: {"name": code, "parent": "", "group": "Example"}
             for code in ["AAA", "BBB", "CCC"]
         }
         records = [
@@ -68,12 +68,12 @@ class GDPDataTests(unittest.TestCase):
         )
         with path.open(newline="") as stream:
             rows = list(csv.DictReader(stream))
-        self.assertEqual(len(rows), provenance["country_count"] * 40)
+        self.assertEqual(len(rows), provenance["region_count"] * 40)
         for year in range(1985, 2025):
             cohort = [r for r in rows if int(r["year"]) == year]
             self.assertEqual(
-                sorted(r["country_code"] for r in cohort),
-                provenance["included_country_codes"],
+                sorted(r["id"] for r in cohort),
+                provenance["included_region_ids"],
             )
             self.assertTrue(all(float(r["value"]) > 0 for r in cohort))
         snapshot = json.loads(gzip.decompress(source.read_bytes()))

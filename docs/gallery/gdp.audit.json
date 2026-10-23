@@ -1,133 +1,149 @@
 {
-  "max_relative_area_error": 6.628031457012185e-14,
-  "minimum_country_distance": 0.4190002614376026,
+  "max_relative_area_error": 7.72715225139109e-14,
+  "minimum_region_distance": 0.21904626248610756,
+  "minimum_group_distance": 3.6293117439245837,
   "overlap_pairs": [],
   "all_geometries_valid": true,
+  "shape_approximation": {
+    "stage": "before simulation",
+    "relative_error_budget": 0.02,
+    "source_outline_vertices": 83294,
+    "prepared_outline_vertices": 23657,
+    "max_relative_symmetric_difference": 0.01999895819699516
+  },
   "coverage": {
-    "omitted_country_codes": [
+    "omitted_region_ids": [
       "ATC",
       "PCN",
       "VAT"
     ],
-    "zero_country_codes": [],
-    "sum_of_values": 88288490.0
+    "zero_region_ids": [],
+    "sum_of_values": 88288490.0,
+    "estimated_region_ids": []
   },
   "packing": {
-    "method": "geographic_growth_rigid_body_physics",
+    "method": "growth_rigid_body_physics",
     "engine": "Pymunk/Chipmunk",
     "engine_version": "7.3.1",
-    "convex_piece_count": 693,
+    "convex_piece_count": 1386,
+    "group_fixture_count": 693,
+    "cached_collision_part_count": 0,
+    "collision_vertex_count": 19262,
+    "fixture_build_seconds": 0.2696846769977128,
     "collision_mode": "hull",
     "collision_tolerance": 0.12,
-    "maximum_final_collision_outline_error": 14.674025936703934,
+    "maximum_final_collision_outline_error": 14.644911604846255,
     "growth_steps": 80,
     "relax_per_step": 20,
-    "settling_iterations": 4579,
+    "settling_iterations": 4382,
     "equilibrium_converged": true,
-    "max_final_step_movement": 0.00197335628419217,
+    "max_final_step_movement": 0.001994688721957878,
     "position_tolerance": 0.002,
     "physics_dt": 0.04,
-    "initial_geographic_scale": 0.8643870531580521,
+    "initial_map_scale": 0.8642731920913336,
     "growth_trace": [
       {
         "progress": 0.007250000000000001,
-        "max_step_movement": 0.11231376153187847
+        "max_step_movement": 0.11255061018932327
       },
       {
         "progress": 0.028000000000000004,
-        "max_step_movement": 0.14342227519441364
+        "max_step_movement": 0.1437501333498363
       },
       {
         "progress": 0.06075,
-        "max_step_movement": 0.14681472150917668
+        "max_step_movement": 0.14669642634881636
       },
       {
         "progress": 0.10400000000000002,
-        "max_step_movement": 0.14157624196773985
+        "max_step_movement": 1.568955728089225
       },
       {
         "progress": 0.15625,
-        "max_step_movement": 0.13297787502437852
+        "max_step_movement": 0.3337111482557944
       },
       {
         "progress": 0.216,
-        "max_step_movement": 0.12373460879283389
+        "max_step_movement": 0.1257354781191387
       },
       {
         "progress": 0.28174999999999994,
-        "max_step_movement": 0.09905624578063302
+        "max_step_movement": 0.12244493373676167
       },
       {
         "progress": 0.3520000000000001,
-        "max_step_movement": 0.09334700611244122
+        "max_step_movement": 0.10869844794377553
       },
       {
         "progress": 0.4252500000000001,
-        "max_step_movement": 0.08978486088666163
+        "max_step_movement": 0.1253979030289672
       },
       {
         "progress": 0.5,
-        "max_step_movement": 0.12886032046002005
+        "max_step_movement": 0.09817931076206472
       },
       {
         "progress": 0.5747500000000001,
-        "max_step_movement": 0.16288544639251853
+        "max_step_movement": 0.9288671069169742
       },
       {
         "progress": 0.648,
-        "max_step_movement": 0.07871954219756536
+        "max_step_movement": 0.17522699790543972
       },
       {
         "progress": 0.71825,
-        "max_step_movement": 0.12185572439221057
+        "max_step_movement": 0.19469236226818873
       },
       {
         "progress": 0.7839999999999999,
-        "max_step_movement": 0.10541413719936177
+        "max_step_movement": 0.20618496593665858
       },
       {
         "progress": 0.84375,
-        "max_step_movement": 0.0975110882098467
+        "max_step_movement": 2.148198395045087
       },
       {
         "progress": 0.8960000000000001,
-        "max_step_movement": 0.1487156276114882
+        "max_step_movement": 0.09004923908147158
       },
       {
         "progress": 0.9392499999999999,
-        "max_step_movement": 0.48998372599170437
+        "max_step_movement": 0.11594808702605731
       },
       {
         "progress": 0.972,
-        "max_step_movement": 0.5097253428305373
+        "max_step_movement": 0.42879130562286116
       },
       {
         "progress": 0.99275,
-        "max_step_movement": 0.39844775711898817
+        "max_step_movement": 0.597048047296784
       },
       {
         "progress": 1.0,
-        "max_step_movement": 0.2608939908268491
+        "max_step_movement": 0.49529662939855595
       }
     ],
-    "elapsed_seconds": 30.293390287999955
+    "elapsed_seconds": 20.846720475994516,
+    "mean_displacement_from_start": 23.00160933549396,
+    "max_displacement_from_start": 235.72508427121792
   },
   "omitted_labels": [],
   "config": {
-    "title": "The world economy by size",
-    "subtitle": "Countries resized by nominal GDP | Historical demonstration dataset",
-    "source_note": "Demo only: Natural Earth GDP_MD attributes, mixed years (mostly 2019); not current GDP. USD millions in input.",
+    "title": "GDP by country",
+    "source_crs": "EPSG:4326",
+    "projection": "EPSG:8857",
+    "subtitle": "Country area represents GDP",
+    "source_note": "Natural Earth historical GDP; mixed years. Input in USD millions.",
+    "value_label": "Quantity",
     "prefix": "$",
     "divisor": 1000000,
     "suffix": "T",
     "decimals": 1,
     "total_area": 10000,
-    "country_gap": 0.4,
-    "cluster_gap": 2.5,
-    "geographic_spread": 0.72,
-    "geographic_pull": 0.002,
-    "cluster_pull": 0.006,
-    "layout_mode": "growth",
+    "region_gap": 0.2,
+    "group_gap": 3.6,
+    "anchor_pull": 0.002,
+    "group_pull": 0.006,
     "growth_steps": 80,
     "relax_per_step": 20,
     "settle_steps": 6000,
@@ -137,15 +153,15 @@
     "collision_tolerance": 0.12,
     "collision_mode": "hull",
     "damping": 0.7,
-    "iterations": 250,
     "territory_distance": 12,
     "parent_pull": 0.04,
     "satellite_distance": 1.4,
     "min_part_fraction": 0.001,
     "max_parts": 24,
     "simplify": 0.0015,
+    "shape_error": 0.02,
     "labels": 14,
-    "label_countries": [
+    "label_regions": [
       "AUS",
       "BRA",
       "IND",
@@ -153,9 +169,7 @@
       "NGA"
     ],
     "label_offsets": {},
-    "label_aliases": {
-      "GBR": "UK"
-    },
+    "label_aliases": {},
     "background": "#edf8fa",
     "ink": "#10243a",
     "colors": {
@@ -165,41 +179,20 @@
       "Africa": "#edc54f",
       "Asia": "#e55261",
       "Oceania": "#f29b45"
-    },
-    "cluster_anchors": {
-      "North America": [
-        -105,
-        42
-      ],
-      "South America": [
-        -62,
-        -18
-      ],
-      "Europe": [
-        12,
-        52
-      ],
-      "Africa": [
-        18,
-        0
-      ],
-      "Asia": [
-        105,
-        32
-      ],
-      "Oceania": [
-        140,
-        -28
-      ]
     }
   },
   "coordinate_system": "arbitrary cartogram chart units; NOT longitude/latitude",
-  "input_sha256": "27603478fd1f1a49887b382f3733ace680d2abb24a98bf1aeac43065201dc778",
+  "input_sha256": "d73ff833941606cdc7f1172fc5f8d064cd135e80db386cd955eed6ba71830d8d",
   "boundaries_sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+  "map": {
+    "label": "Natural Earth boundaries",
+    "source_crs": "EPSG:4326",
+    "projection": "EPSG:8857"
+  },
   "versions": {
     "python": "3.12.14",
     "numpy": "2.5.4",
     "shapely": "2.2.0",
-    "matplotlib": "3.10.8"
+    "matplotlib": "3.11.2"
   }
 }

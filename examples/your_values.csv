@@ -1,4 +1,4 @@
-country_code,value,name,cluster,parent
+id,value,name,group,parent
 ABW,,Aruba,Europe,NLD
 AFG,,Afghanistan,Asia,
 AGO,,Angola,Africa,
