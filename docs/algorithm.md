@@ -4,8 +4,8 @@
 
 Each country is a translating rigid body with one or more retained polygon parts.
 Rotation is locked. The final rendered area is proportional to its input value.
-Continents are clusters, not rigid containers: all countries participate in the
-same simulation, so attraction and contacts can move them across cluster borders.
+All countries share one simulation. Group attraction and contacts determine
+their positions; continents can move relative to one another.
 
 Preprocessing projects Natural Earth outlines to Equal Earth, unwraps longitude
 for country components across the date line, drops sufficiently tiny components,
@@ -20,7 +20,8 @@ and centroid are restored before testing
 
 $$\frac{\operatorname{area}(P \mathbin{\triangle} P')}{\operatorname{area}(P)} \leq \text{shape_error}.$$
 
-The adaptive search keeps the coarsest accepted candidate, preserving holes.
+The adaptive search keeps the coarsest tested candidate within the budget,
+preserving holes.
 The same prepared shapes feed collision construction, all growth stages,
 rendering, and continuation. The budget applies after island selection; dropped
 parts and intentional inset movement are recorded separately.

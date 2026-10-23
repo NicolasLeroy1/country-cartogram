@@ -1,104 +1,155 @@
-# Usage and reuse
+# Usage
 
-A reusable Python pipeline for separated, shape-preserving country cartograms.
-Change the country quantities in a CSV, choose groups and a style, then export
-PNG, editable SVG, vector PDF, coordinates, and numerical validation results.
-
-See [the project overview](../README.md) for a quick start and [algorithm notes](algorithm.md) for the design rationale.
+See the [README](../README.md) for installation and a first map.
 
 ## Supply your quantities
 
-Start with `examples/your_values.csv`. Fill the rows you need and delete the rest.
-Required columns are `country_code` and `value`:
+Create a CSV, or copy `examples/your_values.csv` and keep the rows you need:
 
 ```csv
 country_code,value
-USA,29200
-CHN,18700
-DEU,4700
-FRA,3200
-BRA,2200
-AUS,1700
+FRA,42
+DEU,60
+ITA,35
 ```
 
-These values illustrate the input format. Codes are predominantly ISO alpha-3; the exact
-accepted identifiers and names are in `../src/country_cartogram/data/country_catalog.csv`. Natural Earth
-also uses special identifiers such as `KOS`, `CYN`, `SOL`, `KAS`, `IOA`, and `ATC`.
+Use codes from the [country catalog](../src/country_cartogram/data/country_catalog.csv).
+Most are ISO alpha-3; the catalog also includes Natural Earth identifiers such as
+`KOS`, `CYN`, and `ATC`.
+
+Values must be finite and non-negative. Zero values and missing countries are
+omitted and listed separately in the audit. Blank values, negative values,
+unknown codes, and duplicate countries are errors. Very small values can be
+invisible in raster exports; no minimum country area is imposed.
 
 Optional columns:
 
 | Column | Meaning |
 | --- | --- |
-| `name` | Display name override |
-| `cluster` | Continent or any grouping you choose |
-| `parent` | Another included country code; brings a territory near its parent |
-| `year` | Provenance carried in the input; does not affect geometry |
-| `value_status`, `value_note` | Observed/estimated status and method; see [time series](time-series.md#missing-values-and-changing-countries) |
+| `name` | Display name |
+| `cluster` | Group; defaults to the continent |
+| `parent` | Included country to keep a territory near |
+| `year` | Source year; does not affect a static map |
+| `value_status`, `value_note` | Estimate status and method; see [missing values](time-series.md#missing-values-and-changing-countries) |
 
-The supplied figure template supports up to 12 clusters; the default uses six.
+The figure supports up to 12 groups. If `parent` is absent, the boundary data
+supplies it; a blank cell disables the link. Parent and child must share a group.
+Chains and cycles are rejected. If the parent is omitted, its link is disabled
+with a warning. Land already included in a country's boundary, such as French
+Guiana in France, does not need a separate row.
 
-If `parent` is absent, the Natural Earth sovereign relationship is the default.
-A blank `parent` cell explicitly disables that relationship. A parent and child
-must be in the same cluster. Parent chains and cycles are rejected. If a parent
-has no positive input quantity, its link is disabled with a warning. Units that
-are already components of the parent's boundary (for example French Guiana
-within France in this dataset) are handled as polygon parts, not duplicate rows.
-
-Negative, nonfinite, duplicate, unknown-code, and blank values are rejected.
-Zeros have zero area and are omitted. Missing rows are omitted without being
-treated as zero. Both lists appear separately in the audit. No arbitrary
-minimum country size is imposed: extremely small quantities may be invisible
-in raster exports. The area principle is preserved.
+## Run
 
 ```bash
-country-cartogram my_values.csv --config my_style.json --out output/my_map
-# Use another numeric column in the same file:
-country-cartogram my_values.csv --value-column publications --out output/publications
-# Choose exports or increase resolution:
-country-cartogram my_values.csv --formats svg pdf png --dpi 300 --out output/print_map
+country-cartogram values.csv --out output/map
+# Read another value column:
+country-cartogram values.csv --value-column publications --out output/publications
+# Choose formats and resolution:
+country-cartogram values.csv --formats svg pdf png --dpi 300 --out output/print_map
 ```
 
-`--out` takes a path stem without an extension. Runs overwrite outputs with the
-same stem, so choose a different stem for different datasets or versions.
+`--out` is a filename stem without an extension; matching output files are
+overwritten. Use `--config` to apply a style file as shown below.
 
-## Geometry
+The simulation resizes countries from geographic positions, keeping their
+orientation. It checks final areas, overlaps, and gaps before exporting.
+Add `--animate` to save a growth GIF and a three-stage PNG.
+See [the algorithm](algorithm.md) for how the simulation works.
 
-The default growth solver resizes countries gradually from geographic positions,
-with group attraction and local collision forces. Rotation is locked. Final
-polygons are checked for area, overlap, and minimum gap. See the
-[algorithm guide](algorithm.md) for equations and collision modes.
+## Style
 
-`--animate` writes captured solver states as `.growth.gif` and a three-stage
-`.growth.png`. `layout_mode: "legacy"` retains the older two-stage packer for
-comparison; its settings are marked below.
+Create `style.json` with only the settings you want to change:
+
+```json
+{
+  "title": "Research output by country",
+  "subtitle": "Area represents publication count",
+  "source_note": "Source, year, and units",
+  "decimals": 0,
+  "colors": {"Europe": "#6951a3"},
+  "label_countries": ["FRA"]
+}
+```
+
+```bash
+country-cartogram values.csv --config style.json --out output/map
+```
+
+| Setting | Default | Effect |
+| --- | ---: | --- |
+| `colors` | six colors | Group colors, with stable lightness variations by country |
+| `labels` | 14 | Largest countries considered for labels |
+| `label_countries` | `[]` | Additional country codes to label |
+| `label_offsets` | `{}` | Per-code callout offsets, e.g. `{"FRA": [-8, 6]}` |
+| `label_aliases` | `{"GBR": "UK"}` | Short names for labels |
+| `divisor`, `prefix`, `suffix`, `decimals` | `1`, `""`, `""`, `1` | Value formatting |
+| `value_label` | `Quantity` | Quantity and units in a flat HTML viewer |
+
+Labels are placed inside countries or in nearby callouts. Labels that do not
+fit are omitted and listed in the audit. Inspect the SVG or PDF and adjust
+labels as needed. The largest ten values also appear below the static map.
+
+## Layout settings
+
+Distances use chart units. The default total land area is 10000 square units.
+
+| Setting | Default | Effect |
+| --- | ---: | --- |
+| `total_area` | 10000 | Total land area |
+| `country_gap` | 0.2 | Minimum gap within groups |
+| `cluster_gap` | 3.6 | Minimum gap between groups, also bounded by `country_gap` |
+| `shape_error` | 0.02 | Shape error budget applied before simulation |
+| `simplify` | 0.0015 | Fixed tolerance when `shape_error` is 0; set to 0 to disable simplification |
+| `min_part_fraction` | 0.001 | Omit islands below this fraction of a country's land area |
+| `max_parts` | 24 | Maximum retained parts per country |
+| `satellite_distance` | 1.4 | Limit remote island offsets, relative to part radii |
+| `territory_distance` | 12 | Preferred parent-territory distance |
+
+See [shape approximation](algorithm.md#shape-approximation) for the error measure
+and how island selection is recorded. Final areas preserve the input proportions.
+
+## Solver settings
+
+Most runs can use the defaults. Copy [config.example.json](../config.example.json)
+for the full configuration.
+
+| Setting | Default | Effect |
+| --- | ---: | --- |
+| `geographic_pull` | 0.002 | Attraction toward geographic anchors |
+| `cluster_pull` | 0.006 | Attraction toward each group's moving center |
+| `parent_pull` | 0.04 | Strength of parent-territory links |
+| `damping` | 0.7 | Fraction of velocity retained per simulated second |
+| `growth_steps` | 80 | Maximum resizing stages; continuation can use fewer |
+| `relax_per_step` | 20 | Force and contact updates per stage |
+| `settle_steps` | 6000 | Maximum updates after resizing |
+| `position_tolerance` | 0.002 | Movement threshold for convergence |
+| `physics_dt` | 0.04 | Simulated seconds per update |
+| `contact_iterations` | 50 | Contact solver iterations per update |
+| `collision_mode` | `hull` | Conservative hulls; `decomposed` is experimental |
+| `collision_tolerance` | 0.12 | Additional simplification in `decomposed` mode |
+| `layout_mode` | `growth` | Default solver; `legacy` uses the older two-stage packer |
+| `geographic_spread` | 0.72 | Legacy only: spread of country anchors |
+| `iterations` | 250 | Legacy only: packing iterations |
+| `cluster_anchors` | six anchors | Legacy only: group `[longitude, latitude]` targets |
 
 ## Reuse a saved layout
 
-Treat the output stem as a small bundle: keep `map.layout.json`,
-`map.audit.json`, and `map.metrics.csv` together. The layout holds positioned
-polygons and checkpoint state; the audit holds the configuration and checks.
-Figures can be regenerated from this bundle.
-
-To change typography, labels, titles, or colors without rerunning the simulation:
+Keep `map.layout.json`, `map.audit.json`, and `map.metrics.csv` together.
+To change the style without rerunning the simulation:
 
 ```bash
-country-cartogram-restyle output/gdp.layout.json --config my_style.json --out output/gdp_restyled
+country-cartogram-restyle output/map.layout.json --config style.json --out output/restyled
 ```
 
-The override file accepts visual settings only. Force, gap, geometry, or grouping
-changes require a new layout. Restyled bundles retain the same geometry and
-checkpoint state. An output stem replaces the files at that stem, so use a new
-name to keep earlier versions.
-
-For new quantities, continue with `--initial-layout` or use the
-[timeline command](time-series.md) to manage scaling across periods. Changing
-the country cohort or shape preparation settings requires a fresh layout.
+The style file accepts visual settings only. Restyling copies the saved shapes
+and checkpoint state unchanged. New quantities use
+[continuation or a timeline](time-series.md); changing the country set, grouping,
+or shape preparation requires a fresh layout.
 
 ## Use from Python
 
-The command-line tools call these same functions. Paths accept strings or
-`pathlib.Path` objects; each function writes its outputs and returns an audit
-dictionary. Invalid input raises `ValueError`; file errors raise `OSError`.
+These functions also power the commands. They accept strings or `Path` objects,
+write their outputs, and return audit dictionaries.
 
 ```python
 from country_cartogram.pipeline import run
@@ -106,138 +157,75 @@ from country_cartogram.restyle import restyle
 from country_cartogram.timeline import run_timeline
 
 audit = run(
-    "my_values.csv",
-    config_path="my_style.json",
+    "values.csv",
+    config_path="style.json",
     output="output/map",              # filename stem
     formats=("svg", "png"),
 )
 
 restyle(
     "output/map.layout.json",
-    config_path="new_style.json",     # visual overrides only
-    output="output/map_restyled",
+    config_path="new_style.json",
+    output="output/restyled",
     formats=("svg",),
 )
 
 series = run_timeline(
-    "history.csv",                   # year, country_code, value
-    config_path="my_style.json",
-    output="output/history",         # directory
-    formats=(),                      # HTML + checkpoints, no static figures
+    "history.csv",                    # year, country_code, value
+    output="output/history",          # directory
+    formats=(),                       # skip static figures
     normalization="fixed",
 )
 ```
 
-`run(..., formats=())` saves geometry and checks without rendering figures.
-Keep the returned audit for area error, coverage, and convergence; inspect the
-figure as well. The layout coordinates are chart coordinates, not a geographic
-reference system. See the [outputs](#outputs) below for file contents.
-
-## Controls
-
-Copy `config.example.json` or use a small JSON file containing only overrides.
-
-| Setting | Default | Effect |
-| --- | ---: | --- |
-| `country_gap` | 0.2 | Minimum separation within groups, in chart units |
-| `cluster_gap` | 3.6 | Minimum separation across groups; at least `country_gap`. Legacy mode uses cluster envelopes |
-| `geographic_spread` | 0.72 | Legacy mode only: spread of country anchors |
-| `geographic_pull` | 0.002 | Weak spring strength toward geographic anchors |
-| `cluster_pull` | 0.006 | Long-range attraction toward the moving cluster barycenter |
-| `parent_pull` | 0.04 | Strength of parent-territory links |
-| `damping` | 0.7 | Fraction of velocity retained per simulated second |
-| `layout_mode` | `growth` | Gradual geographic simulation; `legacy` keeps the previous layout |
-| `growth_steps` | 80 | Number of smooth area-resizing stages |
-| `relax_per_step` | 20 | Simultaneous force/contact updates per growth stage |
-| `settle_steps` | 6000 | Maximum updates after reaching target sizes |
-| `position_tolerance` | 0.002 | Maximum step displacement for the equilibrium test |
-| `physics_dt` | 0.04 | Simulated seconds per update; large steps can cause jitter |
-| `contact_iterations` | 50 | Collision solver iterations within each update |
-| `collision_mode` | `hull` | One conservative convex hull per land component; `decomposed` is experimental |
-| `collision_tolerance` | 0.12 | Extra outline simplification in `decomposed` mode only |
-| `iterations` | 250 | Legacy mode only: packing iterations |
-| `territory_distance` | 12 | Final preferred parent-relative offset for separate territory records |
-| `satellite_distance` | 1.4 | Maximum remote-part offset as a multiple of summed part radii |
-| `min_part_fraction` | 0.001 | Omit parts below this fraction of country land area |
-| `max_parts` | 24 | Maximum retained components per country |
-| `shape_error` | 0.02 | Pre-simulation shape error budget; see [approximation](algorithm.md) |
-| `simplify` | 0.0015 | Fixed tolerance when `shape_error` is 0; set to 0 to disable simplification |
-| `total_area` | 10000 | Total displayed land area in chart units |
-| `labels` | 14 | Top countries considered for automatic labeling |
-| `label_countries` | `[]` | Additional countries to label |
-| `label_offsets` | `{}` | Per-code callout offsets in chart units |
-| `label_aliases` | `{"GBR":"UK"}` | Short labels for countries with long names |
-| `colors` | six colors | Base cluster colors; stable country-specific lightness variations |
-| `cluster_anchors` | six anchors | Legacy mode only: cluster `[longitude, latitude]` targets |
-| `divisor`, `prefix`, `suffix`, `decimals` | `1`, `""`, `""`, `1` | Value formatting only |
-| `value_label` | `Quantity` | Quantity and units shown in a flat HTML viewer |
-
-For example:
-
-```json
-{
-  "title": "Research output by country",
-  "subtitle": "Country area represents publication count",
-  "source_note": "Your source, year, and inclusion criteria",
-  "country_gap": 0.6,
-  "labels": 12,
-  "decimals": 0,
-  "colors": {"Europe": "#6951a3"},
-  "label_countries": ["FRA"],
-  "label_offsets": {"FRA": [-8, 6]}
-}
-```
-
-Labels are fitted inside countries where possible, otherwise tried as callouts.
-Labels that cannot be placed without colliding with other labels or land are
-omitted and listed in the audit. The largest ten quantities also appear in the
-ranking panel. For publication, inspect the SVG/PDF and adjust labels as needed.
+`run(..., formats=())` saves the layout, metrics, and audit without figures.
+Check the audit for area error and convergence. Invalid inputs raise `ValueError`;
+file errors raise `OSError`.
 
 ## Outputs
 
-Use `--initial-layout previous.layout.json` to continue a single map, or
-`country-cartogram-timeline` for an ordered time series. See the
-[time-series guide](time-series.md) for fixed absolute scaling, checkpoints,
-input compatibility, and compact 2D/3D playback.
-
-For experimental two-variable extrusion, use `--volume-column` alongside `--value-column`.
-Area represents the first variable, height is second / first, and volume
-represents the second. Tall, narrow columns can be hard to interpret.
-See [the 3D guide](3d.md) for examples,
-reusing a saved layout, input validation, and performance measurements.
-
 | File | Contents |
 | --- | --- |
-| `.png` | Raster figure |
-| `.svg` | Editable vector outlines and text |
-| `.pdf` | Vector figure for manuscripts or slides |
-| `.metrics.csv` | Values, shares, actual areas, relative errors, retained island fractions |
-| `.audit.json` | Coverage, zero/missing codes, gap/area checks, omitted labels, configuration, source hashes, versions |
-| `.layout.json` | Positioned polygons, properties, scales, and component metadata |
-| `.growth.gif` | Optional animation captured from actual solver states |
-| `.growth.png` | Optional geographic-start / resizing / settled comparison |
+| `.png`, `.svg`, `.pdf` | Raster and vector figures |
+| `.layout.json` | Positioned polygons and state for continuation |
+| `.metrics.csv` | Values, shares, areas, errors, retained island fractions |
+| `.audit.json` | Coverage, area/gap checks, convergence, settings, source hashes, versions |
+| `.growth.gif` | Optional captured simulation frames |
+| `.growth.png` | Optional start / resizing / settled comparison |
 
-The layout JSON uses arbitrary **cartogram coordinates**, not longitude and
-latitude, and deliberately has no `.geojson` extension. Never interpret it as a
-georeferenced map. Area diagnostics measure vector polygon geometry, excluding
-text and raster antialiasing. Multiple maps normalize to their own totals by
-default: compare shares, not absolute area between separate charts.
+Coordinates are chart units, not longitude and latitude. Area checks measure
+vector polygons. Separate static runs normalize to their own totals; use a
+[timeline](time-series.md#normalization) to compare absolute areas across years.
+For a second quantity encoded by height and volume, see [3D](3d.md).
 
-## Data and reproducibility
+## Other base maps
 
-Bundled geography: [Natural Earth](https://www.naturalearthdata.com/), 1:50m Admin 0
-countries, [repository release tag v5.1.2](https://github.com/nvkelso/natural-earth-vector/tree/v5.1.2).
-Source URL, SHA-256, retrieval date, and license are in `../src/country_cartogram/data/sources.json`.
-Natural Earth data is [public domain](https://www.naturalearthdata.com/about/terms-of-use/).
-Its boundaries reflect its own conventions; countries, dependencies, and disputed
-units are a dataset-specific statistical coverage choice. Antarctica and the
-source's "Seven seas" units are excluded from this pipeline's catalog.
+The simulation and viewer work with polygon regions. The current input loader
+expects Natural Earth-style GeoJSON in longitude/latitude and projects it to
+Equal Earth. `--boundaries regions.geojson` changes the boundary file; it does
+not select a projection or accept arbitrary GeoJSON properties.
 
-Static example quantities come from the historical `GDP_MD` (USD millions) and
-`POP_EST` (people) attributes, with per-row source years. The time-series inputs
-for population apply synthetic growth rates. The [40-year GDP series](time-series.md#forty-year-gdp-showcase)
-uses World Bank observations and marked estimates. `scripts/prepare_examples.py` regenerates the Natural Earth examples'
-CSVs and configurations without downloading data or changing retrieval metadata.
+A national or regional map can use custom boundaries with the required feature
+properties: `CONTINENT` (group), `ISO_A3_EH` (region code), `ADM0_A3` (fallback
+code), `NAME_EN` (name), `ADMIN`, and `SOVEREIGNT` (parent lookup). Use uppercase
+region codes and match them in the CSV's `country_code` column. Codes can identify
+provinces or fictional regions; they do not have to be ISO codes.
 
-Code license: MIT. The bundled Natural Earth dataset is public domain.
-See [development](../CONTRIBUTING.md) for checks and source organization.
+Fantasy maps in local coordinates and other world projections need an input
+adapter and a configurable projection. These are not exposed as options yet;
+static figure footers also assume Natural Earth. The saved-layout format,
+simulation, and viewer can be reused for that work.
+
+## Data
+
+Bundled boundaries are Natural Earth 1:50m Admin 0 countries,
+[release v5.1.2](https://github.com/nvkelso/natural-earth-vector/tree/v5.1.2),
+excluding Antarctica and the source's open-ocean units. They follow Natural
+Earth's boundary conventions. URLs, hashes, dates, and the public-domain license
+are in [source metadata](../src/country_cartogram/data/sources.json).
+
+Static examples use historical `GDP_MD` (USD millions) and `POP_EST` (people)
+attributes, with source years per row. Population timelines use synthetic growth.
+The [40-year GDP timeline](time-series.md#forty-year-gdp-showcase) uses World Bank
+observations and marked estimates. See [development](../CONTRIBUTING.md) to
+regenerate the inputs.
